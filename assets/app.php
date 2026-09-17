@@ -140,8 +140,6 @@ if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] === 
         }).finally(function () { ocrProgressHandler = null; });
     }
 
-    var MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
     function weekStartFor(dateStr) {
         var datePart = String(dateStr || '').slice(0, 10);
         var d = new Date(datePart + 'T00:00:00');
@@ -151,12 +149,28 @@ if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] === 
         return d.toISOString().slice(0, 10);
     }
 
+    function pad2(n) { return (n < 10 ? '0' : '') + n; }
+    function yy(y) { return String(y).slice(-2); }
+
+    // Mirrors dashboardWeekLabel() in index.php: "D-D/MM/YY" (e.g. "7-13/09/26") when
+    // the week stays within one month, widening to include the month and/or year on
+    // both sides when the week crosses a month or year boundary. Keep in sync.
     function weekLabelFor(weekStartStr) {
         var start = new Date(weekStartStr + 'T00:00:00');
         var end = new Date(start.getTime());
         end.setDate(end.getDate() + 6);
-        return start.getDate() + ' ' + MONTH_NAMES[start.getMonth()] + '–'
-            + end.getDate() + ' ' + MONTH_NAMES[end.getMonth()] + ' ' + end.getFullYear();
+        var startMonth = start.getMonth(), endMonth = end.getMonth();
+        var startYear = start.getFullYear(), endYear = end.getFullYear();
+
+        if (startYear === endYear && startMonth === endMonth) {
+            return start.getDate() + '-' + end.getDate() + '/' + pad2(endMonth + 1) + '/' + yy(endYear);
+        }
+        if (startYear === endYear) {
+            return start.getDate() + '/' + pad2(startMonth + 1) + '-'
+                + end.getDate() + '/' + pad2(endMonth + 1) + '/' + yy(endYear);
+        }
+        return start.getDate() + '/' + pad2(startMonth + 1) + '/' + yy(startYear) + '-'
+            + end.getDate() + '/' + pad2(endMonth + 1) + '/' + yy(endYear);
     }
 
     function canDeleteTransactions() {

@@ -77,6 +77,24 @@ function dashboardRespondDuplicateReceipt(
 }
 
 /**
+ * Renders a week's Monday-Sunday span as "D-D/MM/YY" (e.g. "7-13/09/26"), matching
+ * weekLabelFor() in assets/app.php so a live-inserted row's week header (built
+ * client-side) never disagrees with a full page render. Falls back to including the
+ * month and/or year on both sides when the week spans a month or year boundary.
+ */
+function dashboardWeekLabel(DateTimeImmutable $start, DateTimeImmutable $end): string
+{
+    if ($start->format('Y-m') === $end->format('Y-m')) {
+        return $start->format('j') . '-' . $end->format('j') . '/' . $end->format('m/y');
+    }
+    if ($start->format('Y') === $end->format('Y')) {
+        return $start->format('j/m') . '-' . $end->format('j/m') . '/' . $end->format('y');
+    }
+
+    return $start->format('j/m/y') . '-' . $end->format('j/m/y');
+}
+
+/**
  * Groups Final output rows into Monday-Sunday weeks (same boundary as
  * WeeklyObligationService) so the dashboard can show past weeks collapsed and the
  * current week open, newest week first. A row's own receipt_date decides its week,
@@ -104,7 +122,7 @@ function dashboardGroupTransactionsByWeek(array $transactions, string $timezone)
             $label = $weekStart;
             if ($weekStartDate instanceof DateTimeImmutable) {
                 $weekEndDate = WeeklyObligationService::weekEndForStart($weekStartDate);
-                $label = $weekStartDate->format('d M') . '–' . $weekEndDate->format('d M Y');
+                $label = dashboardWeekLabel($weekStartDate, $weekEndDate);
             }
             $groups[$weekStart] = [
                 'week_start' => $weekStart,
