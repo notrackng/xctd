@@ -105,6 +105,7 @@ final class BankReceiptParser
         'OCBC' => 'OCBC',
         'Jago' => 'JAGO',
         'Panin' => 'PANIN',
+        'Allobank' => 'ALLOBANK',
     ];
 
     public function parse(string $rawText): ReceiptData
@@ -475,6 +476,10 @@ final class BankReceiptParser
 
         foreach ($ranges as [$start, $end]) {
             for ($index = max(0, $start); $index <= $end; $index++) {
+                if ($this->precededByDestinationLabel($lines, $index)) {
+                    continue;
+                }
+
                 $sender = $this->cleanNameCandidate($lines[$index] ?? '');
                 if ($sender === null) {
                     continue;
@@ -498,13 +503,35 @@ final class BankReceiptParser
         return null;
     }
 
+    /**
+     * Guards the unlabeled legacy name+account scan (only reached when the receipt
+     * mentions "Mandiri"/"Livin" anywhere, since that mention can be the *destination*
+     * bank rather than the app itself - e.g. an Allobank "Transfer Berhasil" receipt
+     * that prints only "Penerima" / recipient name + "BANK MANDIRI - ..." and never the
+     * sender's own name or account at all) against reading that destination block as
+     * the sender.
+     *
+     * @param list<string> $lines
+     */
+    private function precededByDestinationLabel(array $lines, int $index): bool
+    {
+        $lower = max(0, $index - 2);
+        for ($cursor = $lower; $cursor < $index; $cursor++) {
+            if ($this->matchesAny($lines[$cursor] ?? '', self::DESTINATION_LABEL_PATTERNS)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function looksLikeAccountLine(string $line): bool
     {
         if (preg_match('/[*xX•+]{2,}\s*\d{4}\b/u', $line) === 1) {
             return true;
         }
 
-        if (preg_match('/\b(?:Bank\s+Mandiri|Mandiri|BCA|BRI|BNI|CIMB|Permata|Danamon|BSI|BTN|Maybank|OCBC|SeaBank|Jago|Panin)\b/iu', $line) === 1
+        if (preg_match('/\b(?:Bank\s+Mandiri|Mandiri|BCA|BRI|BNI|CIMB|Permata|Danamon|BSI|BTN|Maybank|OCBC|SeaBank|Jago|Panin|Allobank)\b/iu', $line) === 1
             && preg_match('/\d{4}/u', $line) === 1) {
             return true;
         }
@@ -574,7 +601,7 @@ final class BankReceiptParser
 
         $line = preg_replace('/(?:[*xX•+]{2,}|\.{2,}|-{2,})\s*\d{4}\b/u', ' ', $line);
         $line = preg_replace('/\b\d{6,20}\b/u', ' ', (string) $line);
-        $line = preg_replace('/\b(?:Bank\s+Mandiri|Mandiri|BCA|BRI|BNI|CIMB|Permata|Danamon|BSI|BTN|Maybank|OCBC|SeaBank|Jago|Panin)\b/iu', ' ', (string) $line);
+        $line = preg_replace('/\b(?:Bank\s+Mandiri|Mandiri|BCA|BRI|BNI|CIMB|Permata|Danamon|BSI|BTN|Maybank|OCBC|SeaBank|Jago|Panin|Allobank)\b/iu', ' ', (string) $line);
         $line = preg_replace('/^[\s:|\-–—]+|[\s:|\-–—]+$/u', '', (string) $line);
         $line = preg_replace('/\s+/u', ' ', trim((string) $line));
 
@@ -586,7 +613,7 @@ final class BankReceiptParser
             return null;
         }
 
-        if (preg_match('/\b(?:Transfer|Transaksi|Berhasil|Sukses|Success|Receipt|Bukti|Keterangan|Catatan|Metode|Nominal|Total|Jumlah|Biaya|Admin|Fee|Tanggal|Waktu|Reference|Referensi|No\.?\s*Ref|Nomor|Saldo|Balance|Sumber\s+Dana|Rekening|Account|Tahapan|Tabungan|Giro|Mobile|myBCA|BRImo|Wondr|Livin|Mata\s+Uang|Berita|Kurs|Jenis|Alias|Informasi|Provider|Channel|IDR|Rupiah|Dollar|Currency)\b/iu', $line) === 1) {
+        if (preg_match('/\b(?:Transfer|Transaksi|Berhasil|Sukses|Success|Receipt|Bukti|Keterangan|Catatan|Metode|Nominal|Total|Jumlah|Biaya|Admin|Fee|Tanggal|Waktu|Reference|Referensi|No\.?\s*Ref|Nomor|Saldo|Balance|Sumber\s+Dana|Rekening|Account|Tahapan|Tabungan|Giro|Mobile|myBCA|BRImo|Wondr|Livin|Allobank|Mata\s+Uang|Berita|Kurs|Jenis|Alias|Informasi|Provider|Channel|IDR|Rupiah|Dollar|Currency)\b/iu', $line) === 1) {
             return null;
         }
 
