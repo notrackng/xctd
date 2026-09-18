@@ -36,6 +36,23 @@ final class WeeklyObligationService
         return $date->modify('-' . (string) ($day - 1) . ' days')->setTime(0, 0, 0);
     }
 
+    /**
+     * The app validates and allocates payments against LAST week, not the real
+     * calendar week - a deliberate policy (see CLAUDE.md), not a bug. Every caller
+     * that means "the week we're actually tracking against" - sync(),
+     * canAcceptPayment(), paymentEligibility(), and the "Weekly payment status" list
+     * itself - must route real "now" through this helper first instead of passing it
+     * directly, so the one-week offset lives in exactly one place. A receipt uploaded
+     * during the real current week therefore settles last week's obligation, which is
+     * why it must still exist as 'unpaid'/'pending' - marking it 'paid' with no backing
+     * transaction (e.g. an administrative correction) removes the slot a genuine
+     * upload needs to land in.
+     */
+    public static function operatingNow(DateTimeImmutable $realNow): DateTimeImmutable
+    {
+        return $realNow->modify('-7 days');
+    }
+
     public static function weekEndForStart(DateTimeImmutable $weekStart): DateTimeImmutable
     {
         return $weekStart->add(new DateInterval('P6D'));
@@ -97,7 +114,7 @@ final class WeeklyObligationService
             if (!isset($pending[(int) ($member['id'] ?? 0)])) {
                 continue;
             }
-            $this->allocatePayments($member);
+            $this->allocatePayments($member, $currentWeekString);
         }
     }
 
@@ -228,6 +245,7 @@ final class WeeklyObligationService
 
         $statement = $this->pdo->prepare(
             "SELECT tm.id, tm.display_name, tm.alias, tm.location, tm.team, tm.is_active,
+                    tm.tracking_start_week,
                     CASE WHEN tm.is_active = 0 THEN 'disabled' ELSE COALESCE(cur.status, 'pending') END AS current_status,
                     COALESCE(overdue.outstanding_weeks, 0) AS outstanding_weeks,
                     overdue.oldest_week
@@ -260,6 +278,17 @@ final class WeeklyObligationService
             }
             $currentStatus = (string) ($row['current_status'] ?? 'pending');
             $outstanding = max(0, (int) ($row['outstanding_weeks'] ?? 0));
+
+            // The queried week predates this sender's own tracking_start_week (e.g. a
+            // sender registered this week has no row at all for last week) - COALESCE
+            // above defaulted current_status to 'pending', which would falsely claim an
+            // obligation exists for a week this sender was never tracked in. Skip
+            // entirely: not in the row list, not in any counter.
+            $trackingStart = (string) ($row['tracking_start_week'] ?? '');
+            if ($trackingStart !== '' && $trackingStart > $weekStartString) {
+                continue;
+            }
+
             if ($currentStatus === 'paid') {
                 $paid++;
             } elseif ((int) ($row['is_active'] ?? 0) === 1) {
@@ -268,6 +297,18 @@ final class WeeklyObligationService
             if ($outstanding > 0) {
                 $outstandingSenders++;
                 $outstandingWeeks += $outstanding;
+            }
+            // Two cases drop a sender out of the row list entirely, though the
+            // paid/pending/outstanding counters above still count them - those are
+            // aggregate totals, not a reflection of what the row list shows:
+            // - Fully settled: this week paid and no older backlog, nothing left to
+            //   chase.
+            // - Disabled: retired via Setting rather than deleted (deletion is blocked
+            //   while obligations are outstanding), so it should stop cluttering the
+            //   active payment-status list even though its old unpaid weeks remain in
+            //   the database as historical record and still count toward carry-forward.
+            if (($currentStatus === 'paid' && $outstanding === 0) || $currentStatus === 'disabled') {
+                continue;
             }
             $resultRows[] = [
                 'sender_id' => (int) ($row['id'] ?? 0),
@@ -294,6 +335,15 @@ final class WeeklyObligationService
         ];
     }
 
+    /**
+     * dashboard()'s rows omit a sender for one of two reasons, and "not found" below
+     * must answer differently for each: (1) fully settled (this week paid, no carry)
+     * or disabled with no carry - correctly `false`, nothing left to pay; (2) the
+     * queried week predates this sender's own tracking_start_week (a brand-new sender
+     * whose only obligation week is still "incoming" under operatingNow()) - this one
+     * must be `true`, or a fresh sender could never make their first payment until
+     * next week's cycle catches up to them. trackingNotYetStarted() distinguishes them.
+     */
     public function canAcceptPayment(int $teamMemberId, ?DateTimeImmutable $now = null): bool
     {
         if ($teamMemberId <= 0) {
@@ -313,10 +363,35 @@ final class WeeklyObligationService
             return $status !== 'paid' || $carry > 0;
         }
 
-        return false;
+        return $this->trackingNotYetStarted($teamMemberId, (string) ($dashboard['week_start'] ?? ''));
     }
 
-    /** @return array<int,array{current_status:string,outstanding_weeks:int}> */
+    /**
+     * True when $weekStartString predates $teamMemberId's own tracking_start_week -
+     * the "brand-new sender, the current operating week is still 'incoming' for them"
+     * case dashboard() deliberately omits from its row list. Shared by
+     * canAcceptPayment() and paymentEligibility(), which both need to tell this apart
+     * from every other reason a sender can be missing from dashboard()'s rows.
+     */
+    private function trackingNotYetStarted(int $teamMemberId, string $weekStartString): bool
+    {
+        if ($teamMemberId <= 0 || $weekStartString === '') {
+            return false;
+        }
+
+        $statement = $this->pdo->prepare(
+            'SELECT tracking_start_week FROM team_members WHERE id = :id AND is_active = 1'
+        );
+        $statement->bindValue(':id', $teamMemberId, PDO::PARAM_INT);
+        $statement->execute();
+        $trackingStart = $statement->fetchColumn();
+
+        return is_string($trackingStart) && $trackingStart !== '' && $trackingStart > $weekStartString;
+    }
+
+    /**
+     * @return array<int,array{current_status:string,outstanding_weeks:int}>
+     */
     public function paymentEligibility(?DateTimeImmutable $now = null): array
     {
         $dashboard = $this->dashboard($now);
@@ -336,7 +411,50 @@ final class WeeklyObligationService
             ];
         }
 
+        // dashboard() omits a sender whose tracking_start_week is after the queried
+        // week (see the exclusion in its row-building loop). Add them back here as
+        // eligible ('pending', no carry) - otherwise api/sender-options.php's picker
+        // would wrongly treat a brand-new sender as ineligible before their first
+        // obligation week ever becomes the operating week.
+        $weekStartString = (string) ($dashboard['week_start'] ?? '');
+        if ($weekStartString !== '') {
+            $statement = $this->pdo->prepare(
+                'SELECT id FROM team_members WHERE is_active = 1 AND tracking_start_week > :week_start'
+            );
+            $statement->bindValue(':week_start', $weekStartString);
+            $statement->execute();
+            foreach ($statement->fetchAll() as $row) {
+                $id = is_array($row) ? (int) ($row['id'] ?? 0) : 0;
+                if ($id > 0 && !isset($result[$id])) {
+                    $result[$id] = ['current_status' => 'pending', 'outstanding_weeks' => 0];
+                }
+            }
+        }
+
         return $result;
+    }
+
+    /**
+     * Every outstanding (aged-past, genuinely overdue) week across every sender,
+     * oldest first - the detail behind the "Carry-forward" count shown elsewhere.
+     * Deliberately `status = 'unpaid'` only, not `'pending'`: a `pending` row is this
+     * week's not-yet-due obligation, not backlog.
+     *
+     * @return list<array{team_member_id:int,alias:string,display_name:string,team:string,location:string,week_start:string,week_end:string,status:string}>
+     */
+    public function carryHistory(): array
+    {
+        $statement = $this->pdo->query(
+            "SELECT w.team_member_id, tm.alias, tm.display_name, tm.team, tm.location,
+                    w.week_start, w.week_end, w.status
+             FROM weekly_payment_obligations w
+             JOIN team_members tm ON tm.id = w.team_member_id
+             WHERE w.status = 'unpaid'
+             ORDER BY w.week_start ASC, tm.alias ASC"
+        );
+        $rows = $statement->fetchAll();
+
+        return is_array($rows) ? $rows : [];
     }
 
     /** @return list<array<string,mixed>> */
@@ -372,8 +490,16 @@ final class WeeklyObligationService
         ]);
     }
 
-    /** @param array<string,mixed> $member */
-    private function allocatePayments(array $member): void
+    /**
+     * The current week's obligation is processed before older ones (matched first in
+     * the ORDER BY below), so a payment settles the week it actually arrived in before
+     * any leftover is used to chip away at older backlog. Older unpaid/pending weeks
+     * still fall back to oldest-first (FIFO) for any transaction left over after the
+     * current week is settled, or when the current week has already been paid.
+     *
+     * @param array<string,mixed> $member
+     */
+    private function allocatePayments(array $member, string $currentWeekStart): void
     {
         $memberId = (int) ($member['id'] ?? 0);
         $senderName = (string) ($member['display_name'] ?? '');
@@ -385,9 +511,10 @@ final class WeeklyObligationService
             "SELECT id, week_start
              FROM weekly_payment_obligations
              WHERE team_member_id = :team_member_id AND status IN ('unpaid', 'pending')
-             ORDER BY week_start ASC, id ASC"
+             ORDER BY (week_start = :current_week_start) DESC, week_start ASC, id ASC"
         );
         $obligationStatement->bindValue(':team_member_id', $memberId, PDO::PARAM_INT);
+        $obligationStatement->bindValue(':current_week_start', $currentWeekStart);
         $obligationStatement->execute();
         $obligations = $obligationStatement->fetchAll();
         if (!is_array($obligations) || $obligations === []) {

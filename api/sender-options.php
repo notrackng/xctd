@@ -88,8 +88,9 @@ try {
     }
 
     $weeklyService = new WeeklyObligationService($pdo, $timezone);
-    $weeklyService->sync();
-    $eligibility = $weeklyService->paymentEligibility();
+    $operatingNow = WeeklyObligationService::operatingNow(new DateTimeImmutable('now', new DateTimeZone($timezone)));
+    $weeklyService->sync($operatingNow);
+    $eligibility = $weeklyService->paymentEligibility($operatingNow);
     $options = [];
     foreach ($resolution['options'] as $option) {
         $id = (int) ($option['id'] ?? 0);
@@ -114,7 +115,7 @@ try {
     }
 
     if ($options === []) {
-        throw new RuntimeException('All SUBIDs for this sender are already paid for this week.');
+        throw new RuntimeException('All SUBIDs for this sender are already paid for the tracked week.');
     }
 
     senderOptionsRespondJson(200, [

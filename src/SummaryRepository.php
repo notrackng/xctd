@@ -32,7 +32,7 @@ final class SummaryRepository
             'week' => $this->period(
                 $weekStart->format('Y-m-d'),
                 $weekEnd->format('Y-m-d'),
-                sprintf('Week %s · %s–%s', $now->format('W'), $weekStart->format('d M'), $weekEnd->modify('-1 day')->format('d M Y'))
+                sprintf('Week %s · %s–%s', $weekStart->format('W'), $weekStart->format('d M'), $weekEnd->modify('-1 day')->format('d M Y'))
             ),
             'month' => $this->period($monthStart->format('Y-m-d'), $monthEnd->format('Y-m-d'), $now->format('F Y')),
             'year' => $this->period($yearStart->format('Y-m-d'), $yearEnd->format('Y-m-d'), $now->format('Y')),

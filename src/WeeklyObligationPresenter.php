@@ -4,8 +4,32 @@ declare(strict_types=1);
 
 namespace App;
 
+use DateTimeImmutable;
+
 final class WeeklyObligationPresenter
 {
+    /**
+     * The dashboard shows the operating week (WeeklyObligationService::operatingNow() -
+     * last week, same week sync()/canAcceptPayment() validate against) as the primary
+     * "Weekly payment status" list, with the real, still-open current week surfaced
+     * separately via 'incoming_label'. Routing through operatingNow() here - the same
+     * helper the validation path uses - is what keeps the list showing exactly the week
+     * a new payment would actually settle; shifting by some other amount here would
+     * silently disagree with what canAcceptPayment() just decided.
+     *
+     * @return array<string,mixed>
+     */
+    public static function presentForDisplay(WeeklyObligationService $service, DateTimeImmutable $now): array
+    {
+        $presented = self::present($service->dashboard(WeeklyObligationService::operatingNow($now)));
+
+        $incomingStart = WeeklyObligationService::weekStartForDate($now);
+        $incomingEnd = WeeklyObligationService::weekEndForStart($incomingStart);
+        $presented['incoming_label'] = $incomingStart->format('d M') . '–' . $incomingEnd->format('d M Y');
+
+        return $presented;
+    }
+
     /** @param array<string,mixed> $data @return array<string,mixed> */
     public static function present(array $data): array
     {

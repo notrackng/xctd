@@ -60,6 +60,7 @@ try {
     if (!Auth::syncUserForApi($userRepository)) {
         realtimeRespondJson(401, ['ok' => false, 'message' => 'Authentication required.']);
     }
+    $now = new DateTimeImmutable('now', new DateTimeZone($timezone));
 
     if ($method === 'POST') {
         if (!Auth::isAdmin()) {
@@ -81,14 +82,14 @@ try {
         (new TransactionRepository($pdo))->delete($id);
 
         $weeklyService = new WeeklyObligationService($pdo, $timezone);
-        $weeklyService->sync();
+        $weeklyService->sync(WeeklyObligationService::operatingNow($now));
 
         realtimeRespondJson(200, [
             'ok' => true,
             'message' => 'Transaction deleted.',
             'id' => $id,
             'summary' => SummaryPresenter::present((new SummaryRepository($pdo))->dashboard(null, $timezone)),
-            'weekly' => WeeklyObligationPresenter::present($weeklyService->dashboard()),
+            'weekly' => WeeklyObligationPresenter::presentForDisplay($weeklyService, $now),
         ]);
     }
 
@@ -113,8 +114,8 @@ try {
     if ($transactions !== [] || $includeSummary) {
         $payload['summary'] = SummaryPresenter::present((new SummaryRepository($pdo))->dashboard(null, $timezone));
         $weeklyService = new WeeklyObligationService($pdo, $timezone);
-        $weeklyService->sync();
-        $payload['weekly'] = WeeklyObligationPresenter::present($weeklyService->dashboard());
+        $weeklyService->sync(WeeklyObligationService::operatingNow($now));
+        $payload['weekly'] = WeeklyObligationPresenter::presentForDisplay($weeklyService, $now);
     }
     realtimeRespondJson(200, $payload);
 } catch (Throwable $e) {

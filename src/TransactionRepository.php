@@ -147,8 +147,10 @@ final class TransactionRepository
      * weekly_payment_obligations.payment_transaction_id (FK ON DELETE RESTRICT, so the
      * delete below fails outright otherwise). Releasing that link and dropping the
      * obligation back to 'pending' first lets the next WeeklyObligationService::sync()
-     * either reallocate another unallocated transaction to it (FIFO, unchanged logic)
-     * or age it back to 'unpaid' if the week has already closed - both existing paths.
+     * either reallocate another unallocated transaction to it (current-week-first,
+     * then oldest-unpaid FIFO - see WeeklyObligationService::allocatePayments(),
+     * unchanged by this method) or age it back to 'unpaid' if the week has already
+     * closed - both existing paths.
      */
     public function delete(int $id): void
     {
