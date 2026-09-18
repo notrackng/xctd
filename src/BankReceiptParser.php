@@ -248,10 +248,41 @@ final class BankReceiptParser
         }
 
         if ($best === null) {
+            $best = $this->extractUnlabeledAmount($lines);
+        }
+
+        if ($best === null) {
             throw new RuntimeException('Transaction amount was not detected.');
         }
 
         return [$best['amount'], $best['index']];
+    }
+
+    /**
+     * Falls back to a bare currency-prefixed or thousands-grouped amount when no
+     * receipt label (Nominal/Total/Jumlah/...) was found anywhere - observed on BCA's
+     * compact "m-Transfer" confirmation card, which prints only "Rp 800.000,00" with no
+     * label at all. Never accepts a bare digit run (parseMoneyFromText's
+     * $allowPlainDigits stays false), so this can't mistake a destination account
+     * number or reference string for the amount.
+     *
+     * @param list<string> $lines
+     * @return array{amount:int,index:int,priority:int}|null
+     */
+    private function extractUnlabeledAmount(array $lines): ?array
+    {
+        foreach ($lines as $index => $line) {
+            if ($this->isFeeLine($line)) {
+                continue;
+            }
+
+            $amount = $this->parseMoneyFromText($line, false);
+            if ($amount !== null) {
+                return ['amount' => $amount, 'index' => $index, 'priority' => 0];
+            }
+        }
+
+        return null;
     }
 
     private function isFeeLine(string $line): bool
