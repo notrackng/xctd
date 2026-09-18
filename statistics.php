@@ -258,6 +258,7 @@ try {
         .weekly-history .wh-total{font-weight:800}
         .weekly-history .wh-count{color:var(--muted)}
         .weekly-history .wh-foot td{border-top:1px solid rgba(148,163,184,.35);background:rgba(248,250,252,.96);font-weight:900}
+        .empty{padding:14px;color:var(--muted);text-align:center;font-size:.6rem}
 
         .msg{margin-bottom:7px;padding:7px 8px;border:1px solid #fecaca;border-radius:var(--radius);background:rgba(254,242,242,.92);box-shadow:0 4px 12px rgba(15,23,42,.035);color:#991b1b;font-size:.61rem;line-height:1.4;overflow-wrap:anywhere}
 
@@ -373,6 +374,10 @@ try {
         </div></article>
         <article class="card"><div class="section-title"><h2>Team share</h2><span class="muted">Current month</span></div><div class="donut-wrap"><svg id="donut-chart" class="donut-svg" viewBox="0 0 120 120" role="img" aria-label="Team share donut chart"></svg><div class="legend"><div class="donut-total" id="donut-total"><?= Security::e((string) ($report['current_month']['total'] ?? 'IDR 0')) ?></div><div class="legend-row"><span><i class="legend-dot"></i>XCTD</span><span id="share-xctd">0%</span></div><div class="legend-row"><span><i class="legend-dot mnx"></i>MNX</span><span id="share-mnx">0%</span></div></div></div></article>
     </section>
+
+    <details class="card reporting-details"><summary><span>Paid history</span><span class="muted">Recent transactions · default hidden</span></summary><div class="details-body"><div id="paid-history-body" class="report-list weekly-history"></div></div></details>
+
+    <details class="card reporting-details"><summary><span>Carry history</span><span class="muted">Outstanding weeks · default hidden</span></summary><div class="details-body"><div id="carry-history-body" class="report-list weekly-history"></div></div></details>
 
     <details class="card reporting-details"><summary><span>Weekly history</span><span class="muted">12 weeks · default hidden</span></summary><div class="details-body"><div id="weekly-history-body" class="report-list weekly-history"></div></div></details>
 </main>

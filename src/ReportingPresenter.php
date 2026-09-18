@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App;
 
+use DateTimeImmutable;
+
 final class ReportingPresenter
 {
     /** @param array<string,mixed> $report @return array<string,mixed> */
@@ -26,6 +28,33 @@ final class ReportingPresenter
                 'XCTD' => MoneyFormatter::formatIdr((string) ($row['XCTD'] ?? '0')),
                 'MNX' => MoneyFormatter::formatIdr((string) ($row['MNX'] ?? '0')),
                 'count' => max(0, (int) ($row['count'] ?? 0)),
+            ];
+        }
+
+        $paidHistory = [];
+        foreach (is_array($report['paid_history'] ?? null) ? $report['paid_history'] : [] as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $paidHistory[] = TransactionPresenter::present($row);
+        }
+
+        $carryHistory = [];
+        foreach (is_array($report['carry_history'] ?? null) ? $report['carry_history'] : [] as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $weekStart = (string) ($row['week_start'] ?? '');
+            $weekEnd = (string) ($row['week_end'] ?? '');
+            $carryHistory[] = [
+                'sender_id' => max(0, (int) ($row['team_member_id'] ?? 0)),
+                'alias' => (string) ($row['alias'] ?? ''),
+                'sender_name' => (string) ($row['display_name'] ?? ''),
+                'team' => (string) ($row['team'] ?? ''),
+                'location' => (string) ($row['location'] ?? ''),
+                'week_start' => $weekStart,
+                'week' => self::weekLabel($weekStart, $weekEnd),
+                'status' => (string) ($row['status'] ?? 'unpaid'),
             ];
         }
 
@@ -61,7 +90,20 @@ final class ReportingPresenter
                 ],
             ],
             'weekly_history' => $history,
+            'paid_history' => $paidHistory,
+            'carry_history' => $carryHistory,
             'changes' => $changes,
         ];
+    }
+
+    private static function weekLabel(string $weekStart, string $weekEnd): string
+    {
+        $start = DateTimeImmutable::createFromFormat('!Y-m-d', $weekStart);
+        $end = DateTimeImmutable::createFromFormat('!Y-m-d', $weekEnd);
+        if (!$start instanceof DateTimeImmutable || !$end instanceof DateTimeImmutable) {
+            return $weekStart;
+        }
+
+        return $start->format('d M') . '–' . $end->format('d M Y');
     }
 }
