@@ -23,8 +23,8 @@ Each **active registered sender** has one payment obligation per Monday-Sunday w
 - Current open week starts as `pending`.
 - If the week closes without an allocated receipt, the obligation becomes `unpaid`.
 - `unpaid` obligations remain outstanding and carry forward indefinitely.
-- A later receipt settles the **oldest unpaid week first** (FIFO).
-- If no backlog exists, the receipt settles the current week's pending obligation.
+- A later receipt settles the **current week first**; only once the current week is paid does a further receipt fall back to settling the **oldest unpaid week** (FIFO) among any remaining backlog.
+- A receipt whose date predates the current week can't settle it (a payment can't retroactively count for a week it arrived before), so it falls straight through to the oldest eligible older week instead.
 - Extra receipts do not prepay future weeks.
 - Disabling a sender stops new weekly obligations; existing unpaid obligations remain.
 - Reactivating a sender starts tracking again from the current week, so disabled gaps are not backfilled.
