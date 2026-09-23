@@ -375,6 +375,10 @@ try {
         <article class="card"><div class="section-title"><h2>Team share</h2><span class="muted">Current month</span></div><div class="donut-wrap"><svg id="donut-chart" class="donut-svg" viewBox="0 0 120 120" role="img" aria-label="Team share donut chart"></svg><div class="legend"><div class="donut-total" id="donut-total"><?= Security::e((string) ($report['current_month']['total'] ?? 'IDR 0')) ?></div><div class="legend-row"><span><i class="legend-dot"></i>XCTD</span><span id="share-xctd">0%</span></div><div class="legend-row"><span><i class="legend-dot mnx"></i>MNX</span><span id="share-mnx">0%</span></div></div></div></article>
     </section>
 
+    <details class="card reporting-details"><summary><span>Paid history</span><span class="muted">Recent transactions · default hidden</span></summary><div class="details-body"><div id="paid-history-body" class="report-list weekly-history"></div></div></details>
+
+    <details class="card reporting-details"><summary><span>Carry history</span><span class="muted">Outstanding weeks · default hidden</span></summary><div class="details-body"><div id="carry-history-body" class="report-list weekly-history"></div></div></details>
+
     <details class="card reporting-details"><summary><span>Weekly history</span><span class="muted">12 weeks · default hidden</span></summary><div class="details-body"><div id="weekly-history-body" class="report-list weekly-history"></div></div></details>
 </main>
 <script id="initial-report" type="application/json" nonce="<?= Security::e($nonce) ?>"><?= json_encode($report, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) ?></script>

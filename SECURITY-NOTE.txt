@@ -144,15 +144,6 @@ settled weeks included. The pending/unpaid guard is unchanged, so only paid rows
 can reach the cascade, and payment_transactions rows are never deleted by it.
 Disable a sender rather than deleting it when its settled history matters.
 
-v1.10.7 display-only, no new security surface.
-
-The "Paid history" and "Carry history" panels are removed from Statistics at
-the user's request. This is a pure feature/UI removal - the underlying
-payment_transactions and weekly_payment_obligations data these panels read is
-untouched, still drives the Dashboard's own "Weekly payment status" and
-"Final output", and is not deleted or exposed any differently. No endpoint,
-auth, or CSRF change.
-
 v1.10.6 display-only, no new security surface.
 
 Final output's grouping changes from per-calendar-day to per-Monday-Sunday-week

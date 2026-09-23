@@ -1,4 +1,4 @@
-# Bank Receipt Extractor v1.10.7
+# Bank Receipt Extractor v1.10.6
 
 Production PHP 8.3+ / MySQL application for browser-side multi-bank OCR, registered sender/team validation, realtime final output, reporting, and weekly payment obligation carry-forward.
 
@@ -270,10 +270,4 @@ Removed
 - "Final output" rows are grouped into Monday-Sunday weeks instead of individual calendar days. The current week's section renders open; older weeks render collapsed (click to expand, not hidden), newest first.
 - Grouping still keys off `created_at` (upload date), not the OCR-derived `receipt_date`, which can be missing or wrong.
 - Week headers use a compact `"D-D/MM/YY"` format (e.g. `"7-13/09/26"`), widening to include the month and/or year on both sides only when a week actually crosses that boundary (e.g. `"28/09-4/10/26"`, `"28/12/26-3/01/27"`). A live-inserted transaction's week header is built client-side with equivalent logic, so it never disagrees with a full page render of the same week.
-
-## v1.10.7 Statistics: Paid history and Carry history removed
-
-- The "Paid history" (recent transactions) and "Carry history" (outstanding weeks) panels are removed from Statistics, at the user's request. "Weekly history" (the 12-week XCTD/MNX table) is unchanged.
-- `WeeklyObligationService::carryHistory()` is removed (it had no other caller). `TransactionRepository::findRecent()` drops its now-unused `$limit` parameter - `index.php`'s Final output list is its only remaining caller and always wants every row.
-- No schema or migration change; no data is deleted, this only removes two report views. The underlying `weekly_payment_obligations`/`payment_transactions` data these panels read from is unaffected and still drives the Dashboard's "Weekly payment status" and "Final output".
 
