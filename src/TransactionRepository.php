@@ -241,21 +241,30 @@ final class TransactionRepository
         return is_array($rows) ? $rows : [];
     }
 
-    /** @return list<array<string, int|string|null>> */
-    public function findRecent(int $limit = 200): array
+    /**
+     * $limit = null fetches every saved transaction, unbounded - used for the
+     * "Final output" list, which must never hide an older transaction behind a row
+     * cap. Callers that do want a capped recent list (e.g. ReportingRepository's
+     * "Paid history") still pass a numeric limit.
+     *
+     * @return list<array<string, int|string|null>>
+     */
+    public function findRecent(?int $limit = 200): array
     {
-        $limit = max(1, min($limit, 500));
-        $statement = $this->pdo->prepare(
-            'SELECT pt.id, pt.reference_no, pt.receipt_date, pt.receipt_time, pt.sender_name,
-                    COALESCE(tm.alias, pt.sender_alias) AS sender_alias, pt.team_member_id,
-                    pt.source_account_last4, pt.team, pt.original_amount, pt.adjusted_amount, pt.created_at
-             FROM payment_transactions pt
-             LEFT JOIN team_members tm ON tm.id = pt.team_member_id
-             ORDER BY pt.id DESC
-             LIMIT :limit'
-        );
-        $statement->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $statement->execute();
+        $sql = 'SELECT pt.id, pt.reference_no, pt.receipt_date, pt.receipt_time, pt.sender_name,
+                       COALESCE(tm.alias, pt.sender_alias) AS sender_alias, pt.team_member_id,
+                       pt.source_account_last4, pt.team, pt.original_amount, pt.adjusted_amount, pt.created_at
+                FROM payment_transactions pt
+                LEFT JOIN team_members tm ON tm.id = pt.team_member_id
+                ORDER BY pt.id DESC';
+
+        if ($limit === null) {
+            $statement = $this->pdo->query($sql);
+        } else {
+            $statement = $this->pdo->prepare($sql . ' LIMIT :limit');
+            $statement->bindValue(':limit', max(1, min($limit, 500)), PDO::PARAM_INT);
+            $statement->execute();
+        }
 
         $rows = $statement->fetchAll();
 

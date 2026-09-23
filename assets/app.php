@@ -30,7 +30,6 @@ if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] === 
     var senderOptionsEndpoint = String($body.data('sender-options-endpoint') || 'api/sender-options.php');
     var pollMs = parseInt(String($body.data('poll-ms') || '2500'), 10);
     var hiddenPollMs = parseInt(String($body.data('hidden-poll-ms') || '10000'), 10);
-    var maxRows = parseInt(String($body.data('max-rows') || '200'), 10);
     var cursorId = parseInt(String($body.data('last-id') || '0'), 10);
     var ocrLanguage = String($body.data('ocr-language') || 'eng');
     var ocrWorkerPath = String($body.data('ocr-worker') || '');
@@ -50,7 +49,6 @@ if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] === 
 
     if (!Number.isFinite(pollMs) || pollMs < 1000) { pollMs = 2500; }
     if (!Number.isFinite(hiddenPollMs) || hiddenPollMs < pollMs) { hiddenPollMs = 10000; }
-    if (!Number.isFinite(maxRows) || maxRows < 1 || maxRows > 500) { maxRows = 200; }
     if (!Number.isFinite(cursorId) || cursorId < 0) { cursorId = 0; }
 
     function currentDelay() {
@@ -141,27 +139,47 @@ if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] === 
     }
 
     function pad2(n) { return (n < 10 ? '0' : '') + n; }
+    function yy(y) { return String(y).slice(-2); }
 
-    // Local calendar date (not UTC - toISOString() previously shifted this a day
-    // backward for any timezone ahead of UTC, e.g. WIB, which is how a live-inserted
-    // row could land in the wrong group). A row only reaches insertTransaction() the
-    // moment it's saved, so "today" is always its correct upload-date group.
-    function todayDateKey() {
+    // Local calendar week start (Monday), computed entirely from local Date getters
+    // and setDate() - not toISOString(), which converts to UTC and previously
+    // shifted a local-midnight Monday back to Sunday for any timezone ahead of UTC
+    // (e.g. WIB, +7), landing a live-inserted row in the wrong week group. A row only
+    // reaches insertTransaction() the moment it's saved, so "this week" by local
+    // clock is always its correct upload-week group - the OCR-derived receipt_date
+    // (can be missing or wrong) is never used for grouping.
+    function currentWeekStartKey() {
         var d = new Date();
+        var isoDay = d.getDay() === 0 ? 7 : d.getDay();
+        d.setDate(d.getDate() - (isoDay - 1));
         return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
     }
 
-    // Mirrors dashboardGroupTransactionsByUploadDate()'s label in index.php:
-    // "D/MM/YY" (e.g. "17/09/26"). Formats straight from the "YYYY-MM-DD" key string,
-    // no Date object involved, so there's no timezone conversion to get wrong.
-    function dateLabelFor(dateKeyStr) {
-        var parts = String(dateKeyStr).split('-');
-        if (parts.length !== 3) { return dateKeyStr; }
-        return parseInt(parts[2], 10) + '/' + parts[1] + '/' + parts[0].slice(-2);
+    // Mirrors dashboardWeekLabel() in index.php: "D-D/MM/YY" (e.g. "7-13/09/26") when
+    // the week stays within one month, widening to include the month and/or year on
+    // both sides when the week crosses a month or year boundary. Parses the
+    // "YYYY-MM-DD" key as local time (the "T00:00:00" suffix, no "Z"), so there's no
+    // UTC conversion to get wrong. Keep in sync with dashboardWeekLabel().
+    function weekLabelFor(weekStartStr) {
+        var start = new Date(weekStartStr + 'T00:00:00');
+        var end = new Date(start.getTime());
+        end.setDate(end.getDate() + 6);
+        var startMonth = start.getMonth(), endMonth = end.getMonth();
+        var startYear = start.getFullYear(), endYear = end.getFullYear();
+
+        if (startYear === endYear && startMonth === endMonth) {
+            return start.getDate() + '-' + end.getDate() + '/' + pad2(endMonth + 1) + '/' + yy(endYear);
+        }
+        if (startYear === endYear) {
+            return start.getDate() + '/' + pad2(startMonth + 1) + '-'
+                + end.getDate() + '/' + pad2(endMonth + 1) + '/' + yy(endYear);
+        }
+        return start.getDate() + '/' + pad2(startMonth + 1) + '/' + yy(startYear) + '-'
+            + end.getDate() + '/' + pad2(endMonth + 1) + '/' + yy(endYear);
     }
 
     function canDeleteTransactions() {
-        return $('#transactions-dates').attr('data-can-delete') === '1';
+        return $('#transactions-weeks').attr('data-can-delete') === '1';
     }
 
     function buildRow(row) {
@@ -180,18 +198,18 @@ if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] === 
         return $tr;
     }
 
-    function findOrCreateDateGroup(dateKeyStr) {
-        var $dates = $('#transactions-dates');
-        var $existing = $dates.find('.date-group[data-date="' + dateKeyStr + '"]');
+    function findOrCreateWeekGroup(weekStartStr) {
+        var $weeks = $('#transactions-weeks');
+        var $existing = $weeks.find('.week-group[data-week-start="' + weekStartStr + '"]');
         if ($existing.length > 0) { return $existing.find('tbody'); }
 
         $('#transactions-empty').remove();
 
         var colCount = canDeleteTransactions() ? 5 : 4;
-        var $details = $('<details>', {'class': 'date-group', 'data-date': dateKeyStr, open: true});
-        var $summary = $('<summary>', {'class': 'date-summary'}).appendTo($details);
-        $('<span>').text(dateLabelFor(dateKeyStr)).appendTo($summary);
-        $('<span>', {'class': 'count', 'data-date-count': true}).text('0 rows').appendTo($summary);
+        var $details = $('<details>', {'class': 'week-group', 'data-week-start': weekStartStr, open: true});
+        var $summary = $('<summary>', {'class': 'week-summary'}).appendTo($details);
+        $('<span>').text(weekLabelFor(weekStartStr)).appendTo($summary);
+        $('<span>', {'class': 'count', 'data-week-count': true}).text('0 rows').appendTo($summary);
         var $table = $('<table>', {'aria-label': 'Final transaction output'}).appendTo(
             $('<div>', {'class': 'table-wrap'}).appendTo($details)
         );
@@ -204,48 +222,33 @@ if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] === 
         var $tbody = $('<tbody>').appendTo($table);
 
         var inserted = false;
-        $dates.find('.date-group').each(function () {
-            if (String($(this).attr('data-date')) < dateKeyStr) {
+        $weeks.find('.week-group').each(function () {
+            if (String($(this).attr('data-week-start')) < weekStartStr) {
                 $details.insertBefore($(this));
                 inserted = true;
                 return false;
             }
             return true;
         });
-        if (!inserted) { $dates.append($details); }
+        if (!inserted) { $weeks.append($details); }
         return $tbody;
     }
 
-    function updateDateCount($tbody) {
-        var $details = $tbody.closest('.date-group');
-        $details.find('[data-date-count]').text(String($tbody.find('tr[data-id]').length) + ' rows');
+    function updateWeekCount($tbody) {
+        var $details = $tbody.closest('.week-group');
+        $details.find('[data-week-count]').text(String($tbody.find('tr[data-id]').length) + ' rows');
     }
 
     function updateRowCount() {
-        $('#row-count').text(String($('#transactions-dates tr[data-id]').length) + ' rows');
-    }
-
-    function trimRows() {
-        var $rows = $('#transactions-dates tr[data-id]');
-        if ($rows.length <= maxRows) { return; }
-        var excess = $rows.slice(maxRows);
-        excess.each(function () {
-            var $tbody = $(this).closest('tbody');
-            $(this).remove();
-            updateDateCount($tbody);
-            if ($tbody.find('tr[data-id]').length === 0) { $tbody.closest('.date-group').remove(); }
-        });
-        if ($('#transactions-dates .date-group').length === 0) {
-            $('#transactions-dates').append($('<div>', {'class': 'empty', id: 'transactions-empty'}).text('No transactions found.'));
-        }
+        $('#row-count').text(String($('#transactions-weeks tr[data-id]').length) + ' rows');
     }
 
     function insertTransaction(row) {
         var id = parseInt(String(row.id || '0'), 10);
-        if (!Number.isFinite(id) || id <= 0 || $('#transactions-dates tr[data-id="' + id + '"]').length > 0) { return false; }
+        if (!Number.isFinite(id) || id <= 0 || $('#transactions-weeks tr[data-id="' + id + '"]').length > 0) { return false; }
         var $row = buildRow(row);
         if ($row === null) { return false; }
-        var $tbody = findOrCreateDateGroup(todayDateKey());
+        var $tbody = findOrCreateWeekGroup(currentWeekStartKey());
 
         var inserted = false;
         $tbody.find('tr[data-id]').each(function () {
@@ -258,14 +261,13 @@ if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] === 
             return true;
         });
         if (!inserted) { $tbody.append($row); }
-        updateDateCount($tbody);
-        trimRows();
+        updateWeekCount($tbody);
         updateRowCount();
         return true;
     }
 
     function resetDeleteButton(id) {
-        $('#transactions-dates .tx-delete[data-id="' + id + '"]').prop('disabled', false).text('Delete');
+        $('#transactions-weeks .tx-delete[data-id="' + id + '"]').prop('disabled', false).text('Delete');
     }
 
     function deleteTransaction(id) {
@@ -282,15 +284,15 @@ if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] === 
                 showToast('Delete failed', 'error');
                 return;
             }
-            var $row = $('#transactions-dates tr[data-id="' + id + '"]');
+            var $row = $('#transactions-weeks tr[data-id="' + id + '"]');
             var $tbody = $row.closest('tbody');
             $row.remove();
             if ($tbody.length > 0) {
-                updateDateCount($tbody);
-                if ($tbody.find('tr[data-id]').length === 0) { $tbody.closest('.date-group').remove(); }
+                updateWeekCount($tbody);
+                if ($tbody.find('tr[data-id]').length === 0) { $tbody.closest('.week-group').remove(); }
             }
-            if ($('#transactions-dates .date-group').length === 0) {
-                $('#transactions-dates').append($('<div>', {'class': 'empty', id: 'transactions-empty'}).text('No transactions found.'));
+            if ($('#transactions-weeks .week-group').length === 0) {
+                $('#transactions-weeks').append($('<div>', {'class': 'empty', id: 'transactions-empty'}).text('No transactions found.'));
             }
             updateRowCount();
             if (response.summary) { updateSummary(response.summary); }
@@ -328,7 +330,6 @@ if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] === 
     function updateWeekly(weekly) {
         if (!weekly || typeof weekly !== 'object') { return; }
         $('#weekly-label').text(String(weekly.label || ''));
-        $('#weekly-incoming-label').text(String(weekly.incoming_label || ''));
         $('#weekly-paid').text(String(parseInt(String(weekly.paid || 0), 10) || 0));
         $('#weekly-pending').text(String(parseInt(String(weekly.pending || 0), 10) || 0));
         $('#weekly-outstanding').text(String(parseInt(String(weekly.outstanding_weeks || 0), 10) || 0) + ' weeks');
@@ -696,7 +697,7 @@ if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] === 
         if (scope === 'weekly') { weeklyPage += dir; refreshWeeklyPage(); }
     });
 
-    $('#transactions-dates').on('click', '.tx-delete', function () {
+    $('#transactions-weeks').on('click', '.tx-delete', function () {
         var $button = $(this);
         var id = parseInt(String($button.attr('data-id') || '0'), 10);
         if (!Number.isFinite(id) || id <= 0) { return; }

@@ -1,4 +1,4 @@
-# Bank Receipt Extractor v1.10.2
+# Bank Receipt Extractor v1.10.6
 
 Production PHP 8.3+ / MySQL application for browser-side multi-bank OCR, registered sender/team validation, realtime final output, reporting, and weekly payment obligation carry-forward.
 
@@ -244,4 +244,30 @@ Database
 Removed
 
 - `src/MandiriReceiptParser.php` (wrapper, unreferenced), `Installer::testDatabase()`, `MoneyFormatter::formatDecimal()`, `TeamRepository::findTeamBySender()`, `UserRepository::countUsers()`, `assets/icons/source-512.png`, and `vendor/` (nothing requires `vendor/autoload.php`; `src/Autoload.php` is the runtime autoloader).
+
+## v1.10.3 real calendar week tracking
+
+- Weekly payment validation and the "Weekly payment status" dashboard now track the real current Monday-Sunday week instead of lagging one week behind it. A receipt uploaded this week now settles this week's obligation, not last week's.
+- The dashboard's "Incoming" preview row (the still-open real current week, shown separately from the tracked week) is removed: there is no longer a distinct week to preview, since the tracked week and the real week are now the same week.
+- The "Weekly payment status" table's week column is relabeled "This week" (was "Last week").
+- `WeeklyObligationService::operatingNow()` remains the single place this policy lives; it is now effectively a pass-through instead of subtracting 7 days. A side effect: a brand-new sender's `tracking_start_week` (stamped from real "now") and the dashboard's tracked week are now on the same clock, so a freshly registered or reactivated sender appears in the dashboard immediately instead of being invisible there for its first week.
+- No schema or migration change. Existing `unpaid`/`pending` obligation rows are unaffected and continue to age and carry forward exactly as before; only which week newly-uploaded receipts settle against has changed.
+
+## v1.10.4 fully-settled senders stay visible
+
+- A sender whose current week is already paid with no carry-forward is no longer dropped from the "Weekly payment status" table. It now stays listed with a "Paid" pill and no carry, instead of disappearing until the next week starts.
+- Disabled senders are still always excluded from this table regardless of carry - that rule is unchanged.
+- Display-only change: `canAcceptPayment()` and the pre-upload SUBID picker (`api/sender-options.php`) already independently treated a fully-paid, no-carry sender as ineligible to pay again, and still do; nothing about who can submit a payment changed.
+
+## v1.10.5 unbounded Final output
+
+- "Final output" no longer caps how many saved transactions it shows. It previously loaded only the most recent `realtime.max_rows` (default 200) and trimmed older rows client-side as new ones arrived live; both caps are removed, so every transaction ever saved is now listed, grouped by upload date (older dates still collapsed by default, not hidden).
+- `realtime.max_rows` is removed from the config shape (`config/private.example.php`, the installer) since nothing reads it anymore. An existing install's `config/private.php` may still have the key; it is simply ignored now, no migration needed.
+- `TransactionRepository::findRecent()` now accepts `null` for "no limit" in addition to a numeric cap; other callers that do want a capped list (e.g. Statistics' "Paid history") are unaffected.
+
+## v1.10.6 Final output grouped by week
+
+- "Final output" rows are grouped into Monday-Sunday weeks instead of individual calendar days. The current week's section renders open; older weeks render collapsed (click to expand, not hidden), newest first.
+- Grouping still keys off `created_at` (upload date), not the OCR-derived `receipt_date`, which can be missing or wrong.
+- Week headers use a compact `"D-D/MM/YY"` format (e.g. `"7-13/09/26"`), widening to include the month and/or year on both sides only when a week actually crosses that boundary (e.g. `"28/09-4/10/26"`, `"28/12/26-3/01/27"`). A live-inserted transaction's week header is built client-side with equivalent logic, so it never disagrees with a full page render of the same week.
 

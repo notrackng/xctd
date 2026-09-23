@@ -10,24 +10,20 @@ final class WeeklyObligationPresenter
 {
     /**
      * The dashboard shows the operating week (WeeklyObligationService::operatingNow() -
-     * last week, same week sync()/canAcceptPayment() validate against) as the primary
-     * "Weekly payment status" list, with the real, still-open current week surfaced
-     * separately via 'incoming_label'. Routing through operatingNow() here - the same
-     * helper the validation path uses - is what keeps the list showing exactly the week
-     * a new payment would actually settle; shifting by some other amount here would
-     * silently disagree with what canAcceptPayment() just decided.
+     * the real current week as of v1.10.3, same week sync()/canAcceptPayment() validate
+     * against) as the "Weekly payment status" list. Routing through operatingNow() here -
+     * the same helper the validation path uses - is what keeps the list showing exactly
+     * the week a new payment would actually settle; shifting by some other amount here
+     * would silently disagree with what canAcceptPayment() just decided. Before v1.10.3
+     * this tracked week lagged a real week behind, and the real still-open current week
+     * was surfaced separately via an 'incoming_label' entry; now that they're the same
+     * week, there is nothing left to show as "incoming" and that key is gone.
      *
      * @return array<string,mixed>
      */
     public static function presentForDisplay(WeeklyObligationService $service, DateTimeImmutable $now): array
     {
-        $presented = self::present($service->dashboard(WeeklyObligationService::operatingNow($now)));
-
-        $incomingStart = WeeklyObligationService::weekStartForDate($now);
-        $incomingEnd = WeeklyObligationService::weekEndForStart($incomingStart);
-        $presented['incoming_label'] = $incomingStart->format('d M') . '–' . $incomingEnd->format('d M Y');
-
-        return $presented;
+        return self::present($service->dashboard(WeeklyObligationService::operatingNow($now)));
     }
 
     /** @param array<string,mixed> $data @return array<string,mixed> */

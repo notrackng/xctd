@@ -135,7 +135,6 @@ final class Installer
                 'realtime' => [
                     'poll_ms' => 2500,
                     'hidden_poll_ms' => 10000,
-                    'max_rows' => 200,
                 ],
             ];
 
