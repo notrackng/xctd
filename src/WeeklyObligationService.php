@@ -297,16 +297,17 @@ final class WeeklyObligationService
                 $outstandingSenders++;
                 $outstandingWeeks += $outstanding;
             }
-            // Two cases drop a sender out of the row list entirely, though the
-            // paid/pending/outstanding counters above still count them - those are
-            // aggregate totals, not a reflection of what the row list shows:
-            // - Fully settled: this week paid and no older backlog, nothing left to
-            //   chase.
-            // - Disabled: retired via Setting rather than deleted (deletion is blocked
-            //   while obligations are outstanding), so it should stop cluttering the
-            //   active payment-status list even though its old unpaid weeks remain in
-            //   the database as historical record and still count toward carry-forward.
-            if (($currentStatus === 'paid' && $outstanding === 0) || $currentStatus === 'disabled') {
+            // Disabled senders drop out of the row list entirely (retired via Setting
+            // rather than deleted - deletion is blocked while obligations are
+            // outstanding), so a retired sender stops cluttering the active
+            // payment-status list even though its old unpaid weeks remain in the
+            // database as historical record and still count toward carry-forward. A
+            // fully-settled sender (this week paid, no older backlog) is NOT excluded
+            // as of v1.10.3+ - it stays visible with a 'Paid' pill and no carry, at
+            // the user's request, so every active sender is always accounted for in
+            // the table rather than silently vanishing once settled. The paid/pending/
+            // outstanding counters above already counted this row regardless.
+            if ($currentStatus === 'disabled') {
                 continue;
             }
             $resultRows[] = [
@@ -336,15 +337,19 @@ final class WeeklyObligationService
 
     /**
      * dashboard()'s rows omit a sender for one of two reasons, and "not found" below
-     * must answer differently for each: (1) fully settled (this week paid, no carry)
-     * or disabled with no carry - correctly `false`, nothing left to pay; (2) the
-     * queried week predates this sender's own tracking_start_week - this one must be
-     * `true`, or a fresh sender could never make their first payment. trackingNotYetStarted()
-     * distinguishes them. As of v1.10.3, operatingNow() no longer lags a week behind
-     * real "now", and TeamRepository already stamps tracking_start_week from real
-     * "now" too, so this second case is now effectively unreachable through normal
-     * create/reactivate - it remains only as a safety net if tracking_start_week is
-     * ever set to a future week by some other path.
+     * must answer differently for each: (1) disabled - correctly `false`, a retired
+     * sender can't accept a payment; (2) the queried week predates this sender's own
+     * tracking_start_week - this one must be `true`, or a fresh sender could never
+     * make their first payment. trackingNotYetStarted() distinguishes them. (A fully
+     * settled sender - this week paid, no carry - is no longer omitted from
+     * dashboard() as of the row-visibility change below, so that used to be a third
+     * reason a sender could be missing here; it isn't anymore, and a fully-settled
+     * sender is now found directly in the loop above instead of falling through to
+     * this method.) As of v1.10.3, operatingNow() no longer lags a week behind real
+     * "now", and TeamRepository already stamps tracking_start_week from real "now"
+     * too, so case (2) is now effectively unreachable through normal create/
+     * reactivate - it remains only as a safety net if tracking_start_week is ever
+     * set to a future week by some other path.
      */
     public function canAcceptPayment(int $teamMemberId, ?DateTimeImmutable $now = null): bool
     {

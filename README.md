@@ -1,4 +1,4 @@
-# Bank Receipt Extractor v1.10.3
+# Bank Receipt Extractor v1.10.4
 
 Production PHP 8.3+ / MySQL application for browser-side multi-bank OCR, registered sender/team validation, realtime final output, reporting, and weekly payment obligation carry-forward.
 
@@ -252,4 +252,10 @@ Removed
 - The "Weekly payment status" table's week column is relabeled "This week" (was "Last week").
 - `WeeklyObligationService::operatingNow()` remains the single place this policy lives; it is now effectively a pass-through instead of subtracting 7 days. A side effect: a brand-new sender's `tracking_start_week` (stamped from real "now") and the dashboard's tracked week are now on the same clock, so a freshly registered or reactivated sender appears in the dashboard immediately instead of being invisible there for its first week.
 - No schema or migration change. Existing `unpaid`/`pending` obligation rows are unaffected and continue to age and carry forward exactly as before; only which week newly-uploaded receipts settle against has changed.
+
+## v1.10.4 fully-settled senders stay visible
+
+- A sender whose current week is already paid with no carry-forward is no longer dropped from the "Weekly payment status" table. It now stays listed with a "Paid" pill and no carry, instead of disappearing until the next week starts.
+- Disabled senders are still always excluded from this table regardless of carry - that rule is unchanged.
+- Display-only change: `canAcceptPayment()` and the pre-upload SUBID picker (`api/sender-options.php`) already independently treated a fully-paid, no-carry sender as ineligible to pay again, and still do; nothing about who can submit a payment changed.
 
