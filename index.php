@@ -77,37 +77,60 @@ function dashboardRespondDuplicateReceipt(
 }
 
 /**
- * Groups Final output rows by the calendar date they were uploaded (created_at, in the
- * app's configured timezone) - not the OCR-derived receipt_date, and not a Monday-Sunday
- * week. created_at is a server-generated timestamp every row always has, so this needs
- * no fallback and no client/server boundary computation to keep in sync (a live-inserted
- * row is, by definition, always uploaded "today" - see todayDateKey() in assets/app.php).
- * Today's date renders open; older dates render collapsed, newest first.
+ * Renders a week's Monday-Sunday span as "D-D/MM/YY" (e.g. "7-13/09/26"), matching
+ * weekLabelFor() in assets/app.php so a live-inserted row's week header (built
+ * client-side) never disagrees with a full page render. Widens to include the month
+ * and/or year on both sides when the week spans a month or year boundary (e.g.
+ * "28/09-4/10/26", "28/12/26-3/01/27").
+ */
+function dashboardWeekLabel(DateTimeImmutable $start, DateTimeImmutable $end): string
+{
+    if ($start->format('Y-m') === $end->format('Y-m')) {
+        return $start->format('j') . '-' . $end->format('j') . '/' . $end->format('m/y');
+    }
+    if ($start->format('Y') === $end->format('Y')) {
+        return $start->format('j/m') . '-' . $end->format('j/m') . '/' . $end->format('y');
+    }
+
+    return $start->format('j/m/y') . '-' . $end->format('j/m/y');
+}
+
+/**
+ * Groups Final output rows into Monday-Sunday weeks (same boundary as
+ * WeeklyObligationService), keyed off created_at (upload date, in the app's
+ * configured timezone) - not the OCR-derived receipt_date, which can be missing or
+ * wrong. created_at is a server-generated timestamp every row always has, so this
+ * needs no fallback and no client/server boundary computation to keep in sync (a
+ * live-inserted row is, by definition, always uploaded during "this week" - see
+ * currentWeekStartKey() in assets/app.php). The current week renders open; older
+ * weeks render collapsed, newest first.
  *
  * @param list<array<string,mixed>> $transactions
- * @return list<array{date:string,label:string,is_today:bool,rows:list<array<string,mixed>>}>
+ * @return list<array{week_start:string,label:string,is_current:bool,rows:list<array<string,mixed>>}>
  */
-function dashboardGroupTransactionsByUploadDate(array $transactions, string $timezone): array
+function dashboardGroupTransactionsByUploadWeek(array $transactions, string $timezone): array
 {
     $zone = new DateTimeZone($timezone);
     $now = new DateTimeImmutable('now', $zone);
-    $today = $now->format('Y-m-d');
+    $currentWeekStart = WeeklyObligationService::weekStartForDate($now)->format('Y-m-d');
 
     $groups = [];
     foreach ($transactions as $transaction) {
         $datePart = substr((string) ($transaction['created_at'] ?? ''), 0, 10);
         $date = DateTimeImmutable::createFromFormat('!Y-m-d', $datePart, $zone) ?: $now;
-        $dateKey = $date->format('Y-m-d');
+        $weekStart = WeeklyObligationService::weekStartForDate($date)->format('Y-m-d');
 
-        if (!isset($groups[$dateKey])) {
-            $groups[$dateKey] = [
-                'date' => $dateKey,
-                'label' => $date->format('j/m/y'),
-                'is_today' => $dateKey === $today,
+        if (!isset($groups[$weekStart])) {
+            $weekStartDate = DateTimeImmutable::createFromFormat('!Y-m-d', $weekStart, $zone) ?: $now;
+            $weekEndDate = WeeklyObligationService::weekEndForStart($weekStartDate);
+            $groups[$weekStart] = [
+                'week_start' => $weekStart,
+                'label' => dashboardWeekLabel($weekStartDate, $weekEndDate),
+                'is_current' => $weekStart === $currentWeekStart,
                 'rows' => [],
             ];
         }
-        $groups[$dateKey]['rows'][] = $transaction;
+        $groups[$weekStart]['rows'][] = $transaction;
     }
 
     krsort($groups);
@@ -132,7 +155,6 @@ try {
 
     $pollMs = max(1000, min((int) ($realtimeConfig['poll_ms'] ?? 2500), 60000));
     $hiddenPollMs = max($pollMs, min((int) ($realtimeConfig['hidden_poll_ms'] ?? 10000), 120000));
-    $maxRows = max(1, min((int) ($realtimeConfig['max_rows'] ?? 200), 500));
 
     $pdo = Database::connect($dbConfig);
     $userRepository = new UserRepository($pdo);
@@ -344,8 +366,8 @@ try {
         }
     }
 
-    $transactions = $transactionRepository->findRecent($maxRows);
-    $transactionDates = dashboardGroupTransactionsByUploadDate($transactions, $timezone);
+    $transactions = $transactionRepository->findRecent(null);
+    $transactionWeeks = dashboardGroupTransactionsByUploadWeek($transactions, $timezone);
     $summary = SummaryPresenter::present($summaryRepository->dashboard(null, $timezone));
 } catch (Throwable $e) {
     error_log('Application failure: ' . $e->getMessage());
@@ -362,7 +384,7 @@ try {
     }
 
     $transactions = [];
-    $transactionDates = [];
+    $transactionWeeks = [];
     $summary = [
         'week' => ['label' => 'Current week', 'total' => 'IDR 0', 'count' => 0, 'teams' => ['XCTD' => 'IDR 0', 'MNX' => 'IDR 0']],
         'month' => ['label' => 'Current month', 'total' => 'IDR 0', 'count' => 0, 'teams' => ['XCTD' => 'IDR 0', 'MNX' => 'IDR 0']],
@@ -381,7 +403,6 @@ try {
     ];
     $pollMs = 2500;
     $hiddenPollMs = 10000;
-    $maxRows = 200;
 }
 
 $csrfToken = Security::csrfToken();
@@ -606,12 +627,12 @@ $lastId = isset($transactions[0]['id']) ? (int) $transactions[0]['id'] : 0;
         .final{color:var(--accent);font-weight:900}
         .empty{padding:14px;color:var(--muted);text-align:center}
 
-        /* Slim-fit date grouping for Final output */
-        .date-group{margin-bottom:6px;border:1px solid var(--line);border-radius:var(--radius);background:rgba(255,255,255,.82);overflow:hidden}
-        .date-group:last-child{margin-bottom:0}
-        .date-summary{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 8px;cursor:pointer;font-size:.60rem;font-weight:800;color:var(--text)}
-        .date-summary .count{color:var(--muted);font-size:.53rem;font-weight:700}
-        .date-group .table-wrap{border:0;border-top:1px solid var(--line);border-radius:0}
+        /* Slim-fit week grouping for Final output */
+        .week-group{margin-bottom:6px;border:1px solid var(--line);border-radius:var(--radius);background:rgba(255,255,255,.82);overflow:hidden}
+        .week-group:last-child{margin-bottom:0}
+        .week-summary{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 8px;cursor:pointer;font-size:.60rem;font-weight:800;color:var(--text)}
+        .week-summary .count{color:var(--muted);font-size:.53rem;font-weight:700}
+        .week-group .table-wrap{border:0;border-top:1px solid var(--line);border-radius:0}
         .tx-delete{min-height:21px;padding:2px 7px;border:1px solid #fecaca;border-radius:var(--radius);background:rgba(255,255,255,.9);color:var(--danger);font:inherit;font-size:.53rem;font-weight:800;cursor:pointer}
         .tx-delete:hover{background:var(--danger-soft);border-color:#fca5a5}
 
@@ -749,7 +770,6 @@ $lastId = isset($transactions[0]['id']) ? (int) $transactions[0]['id'] : 0;
     data-last-id="<?= $lastId ?>"
     data-poll-ms="<?= $pollMs ?>"
     data-hidden-poll-ms="<?= $hiddenPollMs ?>"
-    data-max-rows="<?= $maxRows ?>"
     data-ocr-language="eng"
     data-ocr-worker="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js"
     data-ocr-core="https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1"
@@ -822,15 +842,15 @@ $lastId = isset($transactions[0]['id']) ? (int) $transactions[0]['id'] : 0;
 
     <section class="card">
         <div class="section-title"><h2>Final output</h2><div class="meta"><span id="live-status" class="live-state live-ok">Live</span><span id="row-count" class="count"><?= count($transactions) ?> rows</span></div></div>
-        <div id="transactions-dates" data-can-delete="<?= $isAdmin ? '1' : '0' ?>">
-        <?php if ($transactionDates === []): ?>
+        <div id="transactions-weeks" data-can-delete="<?= $isAdmin ? '1' : '0' ?>">
+        <?php if ($transactionWeeks === []): ?>
             <div class="empty" id="transactions-empty">No transactions found.</div>
         <?php else: ?>
-            <?php foreach ($transactionDates as $dateGroup): ?>
-            <details class="date-group" data-date="<?= Security::e($dateGroup['date']) ?>"<?= $dateGroup['is_today'] ? ' open' : '' ?>>
-                <summary class="date-summary"><span><?= Security::e($dateGroup['label']) ?></span><span class="count" data-date-count><?= count($dateGroup['rows']) ?> rows</span></summary>
+            <?php foreach ($transactionWeeks as $weekGroup): ?>
+            <details class="week-group" data-week-start="<?= Security::e($weekGroup['week_start']) ?>"<?= $weekGroup['is_current'] ? ' open' : '' ?>>
+                <summary class="week-summary"><span><?= Security::e($weekGroup['label']) ?></span><span class="count" data-week-count><?= count($weekGroup['rows']) ?> rows</span></summary>
                 <div class="table-wrap"><table aria-label="Final transaction output"><thead><tr><th>SUBID</th><th>Team</th><th class="right">Final</th><th class="receipt-date">Receipt date</th><?php if ($isAdmin): ?><th class="right">Delete</th><?php endif; ?></tr></thead><tbody>
-                <?php foreach ($dateGroup['rows'] as $transaction): ?>
+                <?php foreach ($weekGroup['rows'] as $transaction): ?>
                     <tr data-id="<?= (int) ($transaction['id'] ?? 0) ?>">
                         <td><?= Security::e((string) (($transaction['sender_alias'] ?? null) ?: '—')) ?></td>
                         <td><?= Security::e((string) ($transaction['team'] ?? '')) ?></td>

@@ -144,6 +144,29 @@ settled weeks included. The pending/unpaid guard is unchanged, so only paid rows
 can reach the cascade, and payment_transactions rows are never deleted by it.
 Disable a sender rather than deleting it when its settled history matters.
 
+v1.10.6 display-only, no new security surface.
+
+Final output's grouping changes from per-calendar-day to per-Monday-Sunday-week
+(same boundary WeeklyObligationService already uses elsewhere), at the user's
+request. Still keyed off created_at (upload timestamp), never the OCR-derived
+receipt_date, so a row can never land in the wrong group because of bad OCR
+data. currentWeekStartKey() in assets/app.php computes the client-side week
+bucket from local Date getters and setDate() only - never toISOString(), which
+converts to UTC and would shift a local-midnight Monday back to Sunday for any
+timezone ahead of UTC (WIB is +7), the same class of bug a prior date-grouping
+change fixed for day buckets. No new endpoint, no auth/CSRF change.
+
+v1.10.5 display-only, no new security surface.
+
+Final output's row cap (realtime.max_rows, default 200, plus a matching
+client-side trim as new rows arrived live) is removed at the user's request:
+every saved transaction is now listed, unbounded, grouped by upload date. The
+config key is dropped from the template/installer since nothing reads it
+anymore. This is a display/query-shape change only - no new endpoint, no
+change to auth, CSRF, or what data a request can already read (the same
+payment_transactions rows were always reachable via existing pagination on
+subsequent page loads; this just removes the cap on any single load).
+
 v1.10.4 display-only, no new security surface.
 
 A fully-settled sender (this week paid, no carry) is no longer dropped from

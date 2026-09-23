@@ -1,4 +1,4 @@
-# Bank Receipt Extractor v1.10.4
+# Bank Receipt Extractor v1.10.6
 
 Production PHP 8.3+ / MySQL application for browser-side multi-bank OCR, registered sender/team validation, realtime final output, reporting, and weekly payment obligation carry-forward.
 
@@ -258,4 +258,16 @@ Removed
 - A sender whose current week is already paid with no carry-forward is no longer dropped from the "Weekly payment status" table. It now stays listed with a "Paid" pill and no carry, instead of disappearing until the next week starts.
 - Disabled senders are still always excluded from this table regardless of carry - that rule is unchanged.
 - Display-only change: `canAcceptPayment()` and the pre-upload SUBID picker (`api/sender-options.php`) already independently treated a fully-paid, no-carry sender as ineligible to pay again, and still do; nothing about who can submit a payment changed.
+
+## v1.10.5 unbounded Final output
+
+- "Final output" no longer caps how many saved transactions it shows. It previously loaded only the most recent `realtime.max_rows` (default 200) and trimmed older rows client-side as new ones arrived live; both caps are removed, so every transaction ever saved is now listed, grouped by upload date (older dates still collapsed by default, not hidden).
+- `realtime.max_rows` is removed from the config shape (`config/private.example.php`, the installer) since nothing reads it anymore. An existing install's `config/private.php` may still have the key; it is simply ignored now, no migration needed.
+- `TransactionRepository::findRecent()` now accepts `null` for "no limit" in addition to a numeric cap; other callers that do want a capped list (e.g. Statistics' "Paid history") are unaffected.
+
+## v1.10.6 Final output grouped by week
+
+- "Final output" rows are grouped into Monday-Sunday weeks instead of individual calendar days. The current week's section renders open; older weeks render collapsed (click to expand, not hidden), newest first.
+- Grouping still keys off `created_at` (upload date), not the OCR-derived `receipt_date`, which can be missing or wrong.
+- Week headers use a compact `"D-D/MM/YY"` format (e.g. `"7-13/09/26"`), widening to include the month and/or year on both sides only when a week actually crosses that boundary (e.g. `"28/09-4/10/26"`, `"28/12/26-3/01/27"`). A live-inserted transaction's week header is built client-side with equivalent logic, so it never disagrees with a full page render of the same week.
 
