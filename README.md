@@ -1,4 +1,4 @@
-# Bank Receipt Extractor v1.10.2
+# Bank Receipt Extractor v1.10.3
 
 Production PHP 8.3+ / MySQL application for browser-side multi-bank OCR, registered sender/team validation, realtime final output, reporting, and weekly payment obligation carry-forward.
 
@@ -244,4 +244,12 @@ Database
 Removed
 
 - `src/MandiriReceiptParser.php` (wrapper, unreferenced), `Installer::testDatabase()`, `MoneyFormatter::formatDecimal()`, `TeamRepository::findTeamBySender()`, `UserRepository::countUsers()`, `assets/icons/source-512.png`, and `vendor/` (nothing requires `vendor/autoload.php`; `src/Autoload.php` is the runtime autoloader).
+
+## v1.10.3 real calendar week tracking
+
+- Weekly payment validation and the "Weekly payment status" dashboard now track the real current Monday-Sunday week instead of lagging one week behind it. A receipt uploaded this week now settles this week's obligation, not last week's.
+- The dashboard's "Incoming" preview row (the still-open real current week, shown separately from the tracked week) is removed: there is no longer a distinct week to preview, since the tracked week and the real week are now the same week.
+- The "Weekly payment status" table's week column is relabeled "This week" (was "Last week").
+- `WeeklyObligationService::operatingNow()` remains the single place this policy lives; it is now effectively a pass-through instead of subtracting 7 days. A side effect: a brand-new sender's `tracking_start_week` (stamped from real "now") and the dashboard's tracked week are now on the same clock, so a freshly registered or reactivated sender appears in the dashboard immediately instead of being invisible there for its first week.
+- No schema or migration change. Existing `unpaid`/`pending` obligation rows are unaffected and continue to age and carry forward exactly as before; only which week newly-uploaded receipts settle against has changed.
 

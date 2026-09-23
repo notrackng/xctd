@@ -37,20 +37,19 @@ final class WeeklyObligationService
     }
 
     /**
-     * The app validates and allocates payments against LAST week, not the real
-     * calendar week - a deliberate policy (see CLAUDE.md), not a bug. Every caller
-     * that means "the week we're actually tracking against" - sync(),
-     * canAcceptPayment(), paymentEligibility(), and the "Weekly payment status" list
-     * itself - must route real "now" through this helper first instead of passing it
-     * directly, so the one-week offset lives in exactly one place. A receipt uploaded
-     * during the real current week therefore settles last week's obligation, which is
-     * why it must still exist as 'unpaid'/'pending' - marking it 'paid' with no backing
-     * transaction (e.g. an administrative correction) removes the slot a genuine
-     * upload needs to land in.
+     * As of v1.10.3 the app validates and allocates payments against the real
+     * calendar week - the one-week-behind policy this helper previously applied
+     * was removed at the user's request. Every caller that means "the week we're
+     * actually tracking against" - sync(), canAcceptPayment(), paymentEligibility(),
+     * and the "Weekly payment status" list itself - still routes real "now" through
+     * this helper first instead of using it directly, so if the policy ever needs
+     * to shift again, this is the only place to touch; never shift $now ad hoc at
+     * an individual call site, or the validation path and the display path will
+     * disagree with each other.
      */
     public static function operatingNow(DateTimeImmutable $realNow): DateTimeImmutable
     {
-        return $realNow->modify('-7 days');
+        return $realNow;
     }
 
     public static function weekEndForStart(DateTimeImmutable $weekStart): DateTimeImmutable
@@ -279,11 +278,11 @@ final class WeeklyObligationService
             $currentStatus = (string) ($row['current_status'] ?? 'pending');
             $outstanding = max(0, (int) ($row['outstanding_weeks'] ?? 0));
 
-            // The queried week predates this sender's own tracking_start_week (e.g. a
-            // sender registered this week has no row at all for last week) - COALESCE
+            // The queried week predates this sender's own tracking_start_week - COALESCE
             // above defaulted current_status to 'pending', which would falsely claim an
             // obligation exists for a week this sender was never tracked in. Skip
-            // entirely: not in the row list, not in any counter.
+            // entirely: not in the row list, not in any counter. Normally unreachable
+            // since v1.10.3 (see canAcceptPayment()'s docblock), kept as a safety net.
             $trackingStart = (string) ($row['tracking_start_week'] ?? '');
             if ($trackingStart !== '' && $trackingStart > $weekStartString) {
                 continue;
@@ -339,10 +338,13 @@ final class WeeklyObligationService
      * dashboard()'s rows omit a sender for one of two reasons, and "not found" below
      * must answer differently for each: (1) fully settled (this week paid, no carry)
      * or disabled with no carry - correctly `false`, nothing left to pay; (2) the
-     * queried week predates this sender's own tracking_start_week (a brand-new sender
-     * whose only obligation week is still "incoming" under operatingNow()) - this one
-     * must be `true`, or a fresh sender could never make their first payment until
-     * next week's cycle catches up to them. trackingNotYetStarted() distinguishes them.
+     * queried week predates this sender's own tracking_start_week - this one must be
+     * `true`, or a fresh sender could never make their first payment. trackingNotYetStarted()
+     * distinguishes them. As of v1.10.3, operatingNow() no longer lags a week behind
+     * real "now", and TeamRepository already stamps tracking_start_week from real
+     * "now" too, so this second case is now effectively unreachable through normal
+     * create/reactivate - it remains only as a safety net if tracking_start_week is
+     * ever set to a future week by some other path.
      */
     public function canAcceptPayment(int $teamMemberId, ?DateTimeImmutable $now = null): bool
     {

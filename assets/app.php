@@ -328,7 +328,6 @@ if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] === 
     function updateWeekly(weekly) {
         if (!weekly || typeof weekly !== 'object') { return; }
         $('#weekly-label').text(String(weekly.label || ''));
-        $('#weekly-incoming-label').text(String(weekly.incoming_label || ''));
         $('#weekly-paid').text(String(parseInt(String(weekly.paid || 0), 10) || 0));
         $('#weekly-pending').text(String(parseInt(String(weekly.pending || 0), 10) || 0));
         $('#weekly-outstanding').text(String(parseInt(String(weekly.outstanding_weeks || 0), 10) || 0) + ' weeks');

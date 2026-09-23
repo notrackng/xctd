@@ -440,7 +440,7 @@ $lastId = isset($transactions[0]['id']) ? (int) $transactions[0]['id'] : 0;
                 radial-gradient(circle at 88% 92%,rgba(100,116,139,.09),transparent 32%),
                 linear-gradient(180deg,#f8fafc 0%,#f1f5f9 100%);
             color:var(--text);
-            font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Monaco,Consolas,"Liberation Mono",monospace;
+            font-family:"Monaspace Neon",ui-monospace,SFMono-Regular,"SF Mono",Menlo,Monaco,Consolas,"Liberation Mono",monospace;
             -webkit-font-smoothing:antialiased;
             -webkit-tap-highlight-color:transparent;
         }
@@ -619,8 +619,6 @@ $lastId = isset($transactions[0]['id']) ? (int) $transactions[0]['id'] : 0;
         .status-pill.paid{border-color:#a7f3d0;background:var(--ok-soft);color:#047857}
         .status-pill.pending{border-color:#fde68a;background:var(--warn-soft);color:#92400e}
         .status-pill.disabled{border-color:#e2e8f0;background:#f1f5f9;color:#64748b}
-        .status-pill.incoming{border-color:#bae6fd;background:#e0f2fe;color:#075985}
-        .weekly-incoming-row{display:flex;align-items:center;gap:6px;margin-bottom:7px}
         .carry{color:#b45309;font-weight:900}
         .carry.zero{color:var(--muted);font-weight:600}
 
@@ -731,7 +729,7 @@ $lastId = isset($transactions[0]['id']) ? (int) $transactions[0]['id'] : 0;
 
         /* v1.10.1 PWA gate */
         .pwa-gate{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-        .pwa-gate-card{width:100%;max-width:360px;padding:16px 14px;border:1px solid rgba(148,163,184,.30);border-radius:.3rem;background:rgba(255,255,255,.97);box-shadow:0 24px 60px rgba(15,23,42,.25),inset 0 1px 0 rgba(255,255,255,.92);color:#0f172a;text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+        .pwa-gate-card{width:100%;max-width:360px;padding:16px 14px;border:1px solid rgba(148,163,184,.30);border-radius:.3rem;background:rgba(255,255,255,.97);box-shadow:0 24px 60px rgba(15,23,42,.25),inset 0 1px 0 rgba(255,255,255,.92);color:#0f172a;text-align:center;font-family:"Monaspace Neon",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
         .pwa-gate-card h2{margin:0 0 6px;font-size:.95rem;font-weight:900;letter-spacing:-.02em}
         .pwa-gate-card p{margin:0 0 10px;color:#64748b;font-size:.62rem;line-height:1.55}
         .pwa-gate-steps{display:grid;gap:5px;margin:0 0 12px;padding:8px;border:1px solid rgba(148,163,184,.26);border-radius:.3rem;background:rgba(248,250,252,.85);text-align:left;font-size:.59rem;line-height:1.5;color:#334155}
@@ -785,13 +783,12 @@ $lastId = isset($transactions[0]['id']) ? (int) $transactions[0]['id'] : 0;
 
     <section class="card" id="weekly-obligations" aria-label="Weekly payment obligations">
         <div class="section-title"><h2>Weekly payment status</h2><span id="weekly-label" class="count"><?= Security::e((string) ($weekly['label'] ?? '')) ?></span></div>
-        <div class="weekly-incoming-row"><span class="status-pill incoming">Incoming</span><span id="weekly-incoming-label" class="count"><?= Security::e((string) ($weekly['incoming_label'] ?? '')) ?></span></div>
         <div class="weekly-metrics">
             <div class="weekly-metric"><span>Paid</span><b id="weekly-paid"><?= (int) ($weekly['paid'] ?? 0) ?></b></div>
             <div class="weekly-metric"><span>Pending</span><b id="weekly-pending"><?= (int) ($weekly['pending'] ?? 0) ?></b></div>
             <div class="weekly-metric"><span>Carry-forward</span><b id="weekly-outstanding"><?= (int) ($weekly['outstanding_weeks'] ?? 0) ?> weeks</b></div>
         </div>
-        <div class="weekly-table"><table aria-label="Weekly sender payment status"><thead><tr><th>SUBID</th><th>Location</th><th>Team</th><th>Last week</th><th class="right">Carry</th></tr></thead><tbody id="weekly-status-body">
+        <div class="weekly-table"><table aria-label="Weekly sender payment status"><thead><tr><th>SUBID</th><th>Location</th><th>Team</th><th>This week</th><th class="right">Carry</th></tr></thead><tbody id="weekly-status-body">
         <?php $weeklyRows = is_array($weekly['rows'] ?? null) ? $weekly['rows'] : []; ?>
         <?php if ($weeklyRows === []): ?><tr id="weekly-empty-row"><td colspan="5" class="empty">No registered sender obligations.</td></tr><?php else: ?>
             <?php foreach ($weeklyRows as $row): $status = (string) ($row['current_status'] ?? 'pending'); $carry = (int) ($row['outstanding_weeks'] ?? 0); ?>
