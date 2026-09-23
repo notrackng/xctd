@@ -115,7 +115,63 @@ if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] === 
         $table.appendTo($body);
     }
 
-    function render(report) { if (!report) { return; } renderChanges(report.changes||{}); renderComparison(report.current_month||{}); renderWeeklyTable(report.weekly_history||[]); }
+    function renderPaidHistory(rows) {
+        var $body=$('#paid-history-body').empty();
+        if (!Array.isArray(rows)) { return; }
+        if (rows.length === 0) {
+            $('<div>',{'class':'empty'}).text('No transactions found.').appendTo($body);
+            return;
+        }
+        var $table=$('<table>');
+        $('<thead>').append($('<tr>').append(
+            $('<th>').text('SUBID'),
+            $('<th>').text('Team'),
+            $('<th>',{'class':'wh-num'}).text('Final'),
+            $('<th>').text('Receipt date')
+        )).appendTo($table);
+        var $tbody=$('<tbody>');
+        rows.forEach(function(r){
+            $('<tr>').append(
+                $('<td>').text(String(r.subid||r.alias||'—')),
+                $('<td>').text(String(r.team||'')),
+                $('<td>',{'class':'wh-num wh-total'}).text(String(r.adjusted_amount||'IDR 0')),
+                $('<td>').text(String(r.receipt_date||''))
+            ).appendTo($tbody);
+        });
+        $tbody.appendTo($table);
+        $table.appendTo($body);
+    }
+
+    function renderCarryHistory(rows) {
+        var $body=$('#carry-history-body').empty();
+        if (!Array.isArray(rows)) { return; }
+        if (rows.length === 0) {
+            $('<div>',{'class':'empty'}).text('No outstanding weeks.').appendTo($body);
+            return;
+        }
+        var $table=$('<table>');
+        $('<thead>').append($('<tr>').append(
+            $('<th>').text('SUBID'),
+            $('<th>').text('Team'),
+            $('<th>').text('Location'),
+            $('<th>').text('Week'),
+            $('<th>').text('Status')
+        )).appendTo($table);
+        var $tbody=$('<tbody>');
+        rows.forEach(function(r){
+            $('<tr>').append(
+                $('<td>').text(String(r.alias||'—')),
+                $('<td>').text(String(r.team||'')),
+                $('<td>').text(String(r.location||'')),
+                $('<td>').text(String(r.week||'')),
+                $('<td>').text(String(r.status||'unpaid').charAt(0).toUpperCase() + String(r.status||'unpaid').slice(1))
+            ).appendTo($tbody);
+        });
+        $tbody.appendTo($table);
+        $table.appendTo($body);
+    }
+
+    function render(report) { if (!report) { return; } renderChanges(report.changes||{}); renderComparison(report.current_month||{}); renderPaidHistory(report.paid_history||[]); renderCarryHistory(report.carry_history||[]); renderWeeklyTable(report.weekly_history||[]); }
     function load() {
         $.ajax({url:endpoint,method:'GET',dataType:'json',cache:false,timeout:10000,headers:{'X-Requested-With':'XMLHttpRequest'}}).done(function(response){if(response&&response.ok===true&&response.report){render(response.report);$('#report-live').text('Live');}}).fail(function(xhr){if(xhr.status===401){window.location.assign('login.php');return;}$('#report-live').text('Reconnecting…');}).always(function(){window.clearTimeout(timer);timer=window.setTimeout(load,15000);});
     }

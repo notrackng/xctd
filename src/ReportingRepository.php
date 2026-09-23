@@ -31,6 +31,8 @@ final class ReportingRepository
             'generated_at' => $now->format(DATE_ATOM),
             'current_month' => $this->teamPeriod($monthStart, $monthEnd, $now->format('F Y')),
             'weekly_history' => $this->weeklyHistory($weekStart, 12),
+            'paid_history' => (new TransactionRepository($this->pdo))->findRecent(50),
+            'carry_history' => (new WeeklyObligationService($this->pdo, $timezone))->carryHistory(),
             'changes' => [
                 'week' => $this->periodChange($weekStart, $weekEnd, $weekStart->modify('-7 days'), $weekStart, 'Week'),
                 'month' => $this->periodChange($monthStart, $monthEnd, $monthStart->modify('-1 month'), $monthStart, 'Month'),
