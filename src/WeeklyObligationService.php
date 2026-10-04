@@ -441,29 +441,6 @@ final class WeeklyObligationService
         return $result;
     }
 
-    /**
-     * Every outstanding (aged-past, genuinely overdue) week across every sender,
-     * oldest first - the detail behind the "Carry-forward" count shown elsewhere.
-     * Deliberately `status = 'unpaid'` only, not `'pending'`: a `pending` row is this
-     * week's not-yet-due obligation, not backlog.
-     *
-     * @return list<array{team_member_id:int,alias:string,display_name:string,team:string,location:string,week_start:string,week_end:string,status:string}>
-     */
-    public function carryHistory(): array
-    {
-        $statement = $this->pdo->query(
-            "SELECT w.team_member_id, tm.alias, tm.display_name, tm.team, tm.location,
-                    w.week_start, w.week_end, w.status
-             FROM weekly_payment_obligations w
-             JOIN team_members tm ON tm.id = w.team_member_id
-             WHERE w.status = 'unpaid'
-             ORDER BY w.week_start ASC, tm.alias ASC"
-        );
-        $rows = $statement->fetchAll();
-
-        return is_array($rows) ? $rows : [];
-    }
-
     /** @return list<array<string,mixed>> */
     private function activeMembers(): array
     {

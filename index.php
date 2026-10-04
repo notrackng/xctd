@@ -366,7 +366,7 @@ try {
         }
     }
 
-    $transactions = $transactionRepository->findRecent(null);
+    $transactions = $transactionRepository->findRecent();
     $transactionWeeks = dashboardGroupTransactionsByUploadWeek($transactions, $timezone);
     $summary = SummaryPresenter::present($summaryRepository->dashboard(null, $timezone));
 } catch (Throwable $e) {
