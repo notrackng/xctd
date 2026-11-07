@@ -30,6 +30,12 @@ if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] === 
     }
     function clearSvg(id) { var node = document.getElementById(id); if (node) { while (node.firstChild) { node.removeChild(node.firstChild); } } return node; }
     function svgEl(name, attrs) { var node = document.createElementNS(ns, name); Object.keys(attrs || {}).forEach(function (key) { node.setAttribute(key, String(attrs[key])); }); return node; }
+    function tokenColor(name, fallback) {
+        var value = '';
+        try { value = window.getComputedStyle(document.documentElement).getPropertyValue(name); } catch (error) { value = ''; }
+        value = String(value || '').trim();
+        return value || fallback;
+    }
 
     function renderChanges(changes) {
         ['week','month','year'].forEach(function (period) {
@@ -65,14 +71,14 @@ if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] === 
         var svg = clearSvg('donut-chart');
         if (!svg) { return; }
         var radius = 42, circumference = 2 * Math.PI * radius;
-        svg.appendChild(svgEl('circle', {cx:60, cy:60, r:radius, fill:'none', stroke:'#e2e8f0', 'stroke-width':14}));
-        var xCircle = svgEl('circle', {cx:60, cy:60, r:radius, fill:'none', stroke:'#2563eb', 'stroke-width':14, 'stroke-linecap':'butt', transform:'rotate(-90 60 60)'});
+        svg.appendChild(svgEl('circle', {cx:60, cy:60, r:radius, fill:'none', stroke:tokenColor('--bar-track', '#e4d8c8'), 'stroke-width':14}));
+        var xCircle = svgEl('circle', {cx:60, cy:60, r:radius, fill:'none', stroke:tokenColor('--accent', '#3e5c46'), 'stroke-width':14, 'stroke-linecap':'butt', transform:'rotate(-90 60 60)'});
         xCircle.setAttribute('stroke-dasharray', String(circumference * (xPct / 100)) + ' ' + String(circumference));
         svg.appendChild(xCircle);
-        var mCircle = svgEl('circle', {cx:60, cy:60, r:radius, fill:'none', stroke:'#0f766e', 'stroke-width':14, 'stroke-linecap':'butt', transform:'rotate(' + String(-90 + (xPct * 3.6)) + ' 60 60)'});
+        var mCircle = svgEl('circle', {cx:60, cy:60, r:radius, fill:'none', stroke:tokenColor('--accent2', '#a14e3c'), 'stroke-width':14, 'stroke-linecap':'butt', transform:'rotate(' + String(-90 + (xPct * 3.6)) + ' 60 60)'});
         mCircle.setAttribute('stroke-dasharray', String(circumference * (mPct / 100)) + ' ' + String(circumference));
         svg.appendChild(mCircle);
-        var center = svgEl('text', {x:60, y:64, 'text-anchor':'middle', 'font-size':10, fill:'#64748b'}); center.textContent = String(Math.round(total > 0 ? 100 : 0)) + '%'; svg.appendChild(center);
+        var center = svgEl('text', {x:60, y:64, 'text-anchor':'middle', 'font-size':11, fill:tokenColor('--muted', '#5e564c')}); center.textContent = String(Math.round(total > 0 ? 100 : 0)) + '%'; svg.appendChild(center);
     }
 
     function formatIdr(raw) {
