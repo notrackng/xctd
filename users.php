@@ -135,6 +135,13 @@ $csrfToken = Security::csrfToken();
             --shadow: 0 10px 24px rgba(62, 46, 28, 0.08);
             --shadow-lg: 0 22px 48px rgba(44, 32, 18, 0.14);
             --ease: 160ms ease;
+            --control-height: 44px;
+            --control-pad-x: 12px;
+            --control-border: 1px;
+            --control-radius: var(--radius);
+            --control-font-size: 16px;
+            --control-line: calc(var(--control-height) - (2 * var(--control-border)));
+            --control-gap: var(--space-2);
             --bg: #f4efe6;
             --bg-top: #fbf8f3;
             --panel: #fbf8f3;
@@ -234,19 +241,9 @@ $csrfToken = Security::csrfToken();
         img, svg, video { max-width: 100%; height: auto; }
         button, input, select, textarea, summary { font-family: inherit; }
         button, a, input, select, summary, label { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-        input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
-        select,
-        textarea {
-            font-size: 16px;
-            line-height: 1.3;
-            min-height: 44px;
-        }
-        button,
         summary,
-        .tab,
-        .pwa-gate-btn,
-        .pwa-gate-dismiss {
-            min-height: 44px;
+        .tab {
+            min-height: var(--control-height);
         }
         :focus { outline: none; }
         :focus-visible {
@@ -577,6 +574,306 @@ $csrfToken = Security::csrfToken();
         @media (min-width: 768px) {
             .grid { grid-template-columns: 1.2fr 1.2fr 0.8fr auto; }
             .grid .btn { width: auto; }
+        }
+    
+        /* Shared control box: one height, padding, radius, border, type size, and line box. */
+        input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+        select,
+        textarea,
+        button,
+        a.b,
+        input.file,
+        input.input,
+        select.select,
+        button.btn,
+        button.primary,
+        button.submit,
+        button.install,
+        button.logout,
+        button.install-btn,
+        button.pager-btn,
+        button.tx-delete,
+        button.alias-cancel,
+        button.alias-option,
+        button.secondary,
+        button.pwa-gate-btn,
+        button.pwa-gate-dismiss,
+        button.account-remove {
+            box-sizing: border-box;
+            height: var(--control-height);
+            min-height: var(--control-height);
+            max-height: var(--control-height);
+            padding: 0 var(--control-pad-x);
+            border: var(--control-border) solid var(--line-strong);
+            border-radius: var(--control-radius);
+            background: var(--panel-strong);
+            color: var(--text);
+            font-family: inherit;
+            font-size: var(--control-font-size);
+            font-weight: 500;
+            line-height: var(--control-line);
+            vertical-align: middle;
+            transition: background-color var(--ease), border-color var(--ease), color var(--ease), box-shadow var(--ease);
+        }
+        button,
+        a.b,
+        button.btn,
+        button.primary,
+        button.submit,
+        button.install,
+        button.logout,
+        button.install-btn,
+        button.pager-btn,
+        button.tx-delete,
+        button.alias-cancel,
+        button.alias-option,
+        button.pwa-gate-btn,
+        button.pwa-gate-dismiss,
+        button.account-remove {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--control-gap);
+            font-weight: 700;
+            line-height: 1.2;
+            white-space: nowrap;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        button.primary,
+        button.submit,
+        button.btn,
+        button.pwa-gate-btn,
+        a.b {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: var(--on-accent);
+            box-shadow: var(--shadow-sm);
+        }
+        button.btn.secondary,
+        button.secondary,
+        button.install,
+        button.logout,
+        button.install-btn,
+        button.pager-btn,
+        button.alias-cancel {
+            border-color: var(--line-strong);
+            background: var(--panel-strong);
+            color: var(--text);
+            box-shadow: none;
+        }
+        button.alias-option {
+            border-color: var(--line-strong);
+            background: var(--panel-strong);
+            color: var(--accent);
+            box-shadow: none;
+        }
+        button.btn.danger,
+        button.tx-delete {
+            border-color: var(--danger-line);
+            background: var(--panel-strong);
+            color: var(--danger);
+            box-shadow: none;
+        }
+        button.pwa-gate-dismiss {
+            width: auto;
+            border-color: transparent;
+            background: transparent;
+            color: var(--muted);
+            box-shadow: none;
+            text-decoration: underline;
+            font-weight: 600;
+        }
+        button.account-remove {
+            width: var(--control-height);
+            padding: 0;
+            border-color: transparent;
+            background: transparent;
+            color: var(--danger);
+            box-shadow: none;
+        }
+        button.primary:hover,
+        button.submit:hover,
+        button.btn:not(.secondary):not(.danger):hover,
+        button.pwa-gate-btn:hover,
+        a.b:hover {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+            color: var(--on-accent);
+        }
+        button.btn.secondary:hover,
+        button.secondary:hover,
+        button.install:hover,
+        button.logout:hover,
+        button.install-btn:hover,
+        button.pager-btn:hover,
+        button.alias-cancel:hover,
+        button.alias-option:hover,
+        input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):hover,
+        select:hover {
+            background: var(--hover);
+            border-color: var(--line-strong);
+            color: var(--text);
+        }
+        button.alias-option:hover { color: var(--accent); }
+        button.btn.danger:hover,
+        button.tx-delete:hover,
+        button.account-remove:hover {
+            background: var(--danger-soft);
+            border-color: var(--danger-line);
+            color: var(--danger);
+        }
+        input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):focus-visible,
+        select:focus-visible,
+        textarea:focus-visible,
+        button:focus-visible,
+        a.b:focus-visible {
+            outline: 2px solid var(--focus);
+            outline-offset: 2px;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+        button:disabled,
+        input:disabled,
+        select:disabled,
+        button.primary:disabled,
+        button.btn:disabled,
+        button.submit:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        input[type="file"],
+        input.file {
+            display: block;
+            width: 100%;
+            padding: 0 var(--control-pad-x) 0 0;
+            color: var(--muted);
+            font-weight: 500;
+            line-height: var(--control-line);
+        }
+        input[type="file"]::file-selector-button,
+        input.file::file-selector-button {
+            height: var(--control-line);
+            margin: 0 var(--control-gap) 0 0;
+            padding: 0 var(--control-pad-x);
+            border: 0;
+            border-right: var(--control-border) solid var(--accent-hover);
+            border-radius: calc(var(--control-radius) - var(--control-border)) 0 0 calc(var(--control-radius) - var(--control-border));
+            background: var(--accent);
+            color: var(--on-accent);
+            font: inherit;
+            font-size: var(--control-font-size);
+            font-weight: 700;
+            line-height: var(--control-line);
+            vertical-align: middle;
+            cursor: pointer;
+        }
+        .field,
+        .upload-grid,
+        .add-line,
+        .row-form,
+        .inline,
+        .account-add-form,
+        .grid,
+        .two,
+        .form-grid,
+        .top-actions,
+        .pager,
+        .alias-options,
+        .alias-choice-head {
+            gap: var(--control-gap);
+        }
+        .upload-grid,
+        .add-line,
+        .row-form,
+        .inline,
+        .account-add-form,
+        .grid,
+        .two,
+        .top-actions,
+        .pager,
+        .alias-options {
+            align-items: center;
+        }
+        .upload-grid { align-items: end; }
+        .field { align-items: stretch; }
+        .top-actions button,
+        .pager button,
+        .alias-options button,
+        button.account-remove,
+        button.pwa-gate-dismiss {
+            width: auto;
+        }
+        button.submit,
+        button.install,
+        button.pwa-gate-btn,
+        .form-grid button.btn,
+        .form-grid .input,
+        .upload-grid button.primary,
+        .upload-grid .file,
+        .grid button.btn,
+        .grid input,
+        .grid select,
+        .add-line .input,
+        .add-line .select,
+        .add-line button.btn,
+        .row-form .input,
+        .row-form .select,
+        .inline input,
+        .inline select {
+            width: 100%;
+            max-width: 100%;
+        }
+        button.submit { margin-top: 0; }
+        button.install,
+        button.pwa-gate-btn { margin-top: 0; margin-bottom: var(--control-gap); }
+        @media (max-width: 719px) {
+            .upload-grid,
+            .grid,
+            .add-line,
+            .row-form,
+            .account-add-form,
+            .two,
+            .form-grid.cols {
+                grid-template-columns: minmax(0, 1fr);
+            }
+            .inline,
+            .account-add-form { flex-direction: column; align-items: stretch; }
+            .upload-grid button.primary,
+            .grid button.btn,
+            .add-line button.btn,
+            .row-form button.btn,
+            .account-add-form button.btn,
+            .account-add-form .input,
+            .account-add-form .select,
+            .inline button.btn,
+            .inline input,
+            .inline select,
+            .form-grid button.btn,
+            button.submit,
+            button.install,
+            input.file,
+            input.input,
+            select.select,
+            .grid input,
+            .grid select {
+                width: 100%;
+            }
+            .top-actions button,
+            .pager button,
+            button.account-remove,
+            button.pwa-gate-dismiss { width: auto; }
+        }
+        @media (min-width: 720px) {
+            .upload-grid { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+            .upload-grid button.primary,
+            .inline button.btn,
+            .account-add-form button.btn,
+            .row-form button.btn { width: auto; }
+        }
+        @media (min-width: 768px) {
+            .grid button.btn { width: auto; }
         }
     </style>
 </head>
