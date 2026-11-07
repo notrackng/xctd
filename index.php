@@ -1355,6 +1355,54 @@ $lastId = isset($transactions[0]['id']) ? (int) $transactions[0]['id'] : 0;
         @media (min-width: 768px) {
             .grid button.btn { width: auto; }
         }
+
+        /* Weekly payment status fills the card at every width. */
+        #weekly-obligations {
+            width: 100%;
+            max-width: none;
+            margin-right: 0;
+            margin-left: 0;
+        }
+        #weekly-obligations .section-title,
+        #weekly-obligations .weekly-metrics,
+        #weekly-obligations .weekly-table,
+        #weekly-obligations .weekly-table table,
+        #weekly-obligations .pager {
+            width: 100%;
+            max-width: none;
+        }
+        #weekly-obligations .weekly-table table {
+            table-layout: fixed;
+        }
+        #weekly-obligations .weekly-table th:nth-child(1),
+        #weekly-obligations .weekly-table td:nth-child(1),
+        #weekly-obligations .weekly-table th:nth-child(2),
+        #weekly-obligations .weekly-table td:nth-child(2),
+        #weekly-obligations .weekly-table th:nth-child(4),
+        #weekly-obligations .weekly-table td:nth-child(4) { width: 22%; }
+        #weekly-obligations .weekly-table th:nth-child(3),
+        #weekly-obligations .weekly-table td:nth-child(3) { width: 16%; }
+        #weekly-obligations .weekly-table th:nth-child(5),
+        #weekly-obligations .weekly-table td:nth-child(5) { width: 18%; }
+        @media (max-width: 719px) {
+            #weekly-obligations .weekly-table,
+            #weekly-obligations .weekly-table table,
+            #weekly-obligations .weekly-table thead,
+            #weekly-obligations .weekly-table tbody,
+            #weekly-obligations .weekly-table tr,
+            #weekly-obligations .weekly-table td:nth-child(n) {
+                display: block;
+                width: 100%;
+                max-width: none;
+                box-sizing: border-box;
+            }
+            #weekly-obligations .weekly-table td:nth-child(n) {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            #weekly-obligations .weekly-table thead { display: none; }
+        }
     </style>
 </head>
 <body
