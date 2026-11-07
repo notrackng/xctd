@@ -115,8 +115,9 @@ foreach ($checks as $check) {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#f8fafc">
-    <meta name="color-scheme" content="light">
+    <meta name="theme-color" content="#f4efe6" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#1b1916" media="(prefers-color-scheme: dark)">
+    <meta name="color-scheme" content="light dark">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -126,10 +127,200 @@ foreach ($checks as $check) {
     <link rel="apple-touch-icon" sizes="180x180" href="../assets/icons/apple-touch-icon.png">
     <title>Auto installer · Bank Receipt Extractor</title>
     <style nonce="<?= Security::e($nonce) ?>">
-        :root{color-scheme:light;--bg:#f8fafc;--panel:#fff;--surface:#fff;--line:#dbe3ec;--text:#0f172a;--muted:#64748b;--accent:#2563eb;--ok:#059669;--danger:#dc2626}*{box-sizing:border-box}*{scrollbar-width:none;-ms-overflow-style:none}*::-webkit-scrollbar{display:none;width:0;height:0}body{margin:0;min-height:100dvh;background:linear-gradient(180deg,#fff 0,var(--bg) 42%,#f1f5f9 100%);color:var(--text);font-family:"Monaspace Neon",ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;padding:max(12px,env(safe-area-inset-top)) 12px max(16px,env(safe-area-inset-bottom))}.wrap{width:min(760px,100%);margin:auto}.head{margin:4px 0 12px}.head h1{font-size:1.15rem;margin:0 0 5px}.head p,.hint{margin:0;color:var(--muted);font-size:.72rem;line-height:1.5}.card{border:1px solid var(--line);background:var(--panel);border-radius:.3rem;padding:13px;margin-bottom:10px;box-shadow:0 10px 28px rgba(15,23,42,.06)}.checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.check{border:1px solid var(--line);border-radius:.3rem;padding:8px;background:#f8fafc;font-size:.68rem}.check b{display:block;font-size:.7rem}.pass b{color:var(--ok)}.fail b{color:var(--danger)}.form-grid{display:grid;gap:9px}.two{display:grid;grid-template-columns:minmax(0,1fr) 90px;gap:8px}.field{display:grid;gap:5px;color:var(--muted);font-size:.7rem}.input{width:100%;min-width:0;border:1px solid var(--line);border-radius:.3rem;background:#fff;color:var(--text);font:inherit;padding:10px;outline:none}.input:focus{border-color:#93c5fd;box-shadow:0 0 0 2px #dbeafe}.btn{width:100%;border:0;border-radius:.3rem;background:var(--accent);color:#fff;font:inherit;font-weight:800;padding:11px;cursor:pointer}.btn:disabled{opacity:.45}.error,.locked{border:1px solid #fecaca;background:#fef2f2;border-radius:.3rem;padding:10px;color:#991b1b;font-size:.72rem;line-height:1.5}.locked a{color:var(--accent)}.section-title{margin:0 0 9px;font-size:.78rem}@media(min-width:700px){body{padding:24px}.card{padding:16px}.form-grid.cols{grid-template-columns:1fr 1fr}.checks{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* Natural soft theme. Components use these tokens only. */
+        :root {
+            color-scheme: light;
+            --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 24px;
+            --space-6: 32px;
+            --radius-sm: 8px;
+            --radius: 12px;
+            --radius-lg: 16px;
+            --radius-pill: 999px;
+            --shadow-sm: 0 1px 2px rgba(62, 46, 28, 0.06);
+            --shadow: 0 10px 24px rgba(62, 46, 28, 0.08);
+            --shadow-lg: 0 22px 48px rgba(44, 32, 18, 0.14);
+            --ease: 160ms ease;
+            --bg: #f4efe6;
+            --bg-top: #fbf8f3;
+            --panel: #fbf8f3;
+            --panel-strong: #fffdf9;
+            --surface: #e8e0d4;
+            --surface-strong: #fffdf9;
+            --line: #e4d8c8;
+            --line-strong: #8c7760;
+            --border: #e4d8c8;
+            --text: #2c2823;
+            --muted: #5e564c;
+            --soft: #6a6258;
+            --accent: #3e5c46;
+            --accent-hover: #314838;
+            --accent-soft: #e5efe4;
+            --accent2: #a14e3c;
+            --accent2-soft: #f8ebe6;
+            --on-accent: #fbf8f3;
+            --danger: #923c34;
+            --danger-soft: #f8ebe8;
+            --danger-line: #e4c4be;
+            --danger-bg: #f8ebe8;
+            --danger-border: #e4c4be;
+            --ok: #2f6a46;
+            --ok-soft: #e6f3ea;
+            --ok-line: #bdd8c6;
+            --warn: #8a5a16;
+            --warn-soft: #f8f1de;
+            --warn-line: #e4d3a6;
+            --focus: #3e5c46;
+            --overlay: rgba(44, 40, 35, 0.52);
+            --glow-accent: rgba(62, 92, 70, 0.14);
+            --glow-stone: rgba(140, 119, 96, 0.16);
+            --bar-track: #e4d8c8;
+            --hover: #fffdf9;
+            --inset: rgba(255, 253, 249, 0.9);
+        }
 
-        /* v1.9.2 slim-fit density */
-        body{padding:max(7px,env(safe-area-inset-top)) 7px max(10px,env(safe-area-inset-bottom))}.head{margin:2px 0 8px}.head h1{font-size:1rem;margin-bottom:3px}.head p,.hint{font-size:.66rem;line-height:1.4}.card{padding:9px;margin-bottom:7px;box-shadow:0 6px 18px rgba(15,23,42,.05)}.checks{gap:5px}.check{padding:6px;font-size:.63rem}.check b{font-size:.65rem}.form-grid{gap:6px}.two{gap:5px}.field{gap:3px;font-size:.65rem}.input{min-height:31px;padding:6px 7px;font-size:.66rem}.btn{min-height:32px;padding:7px;font-size:.67rem}.error,.locked{padding:7px;font-size:.66rem;line-height:1.4}.section-title{margin-bottom:6px;font-size:.72rem}@media(min-width:700px){body{padding:14px}.card{padding:10px}.checks{grid-template-columns:repeat(3,minmax(0,1fr))}}
+        @media (prefers-color-scheme: dark) {
+            :root {
+                color-scheme: dark;
+                --bg: #1b1916;
+                --bg-top: #221f1b;
+                --panel: #26231f;
+                --panel-strong: #2e2a26;
+                --surface: #312c27;
+                --surface-strong: #2e2a26;
+                --line: #4a433c;
+                --line-strong: #8a8076;
+                --border: #4a433c;
+                --text: #f4efe6;
+                --muted: #d2c6b6;
+                --soft: #c4b8a8;
+                --accent: #a9c5a8;
+                --accent-hover: #c5d9c2;
+                --accent-soft: #2c3830;
+                --accent2: #e7a898;
+                --accent2-soft: #3a2c28;
+                --on-accent: #1b1916;
+                --danger: #f0b2a8;
+                --danger-soft: #3a2a27;
+                --danger-line: #6e4a44;
+                --danger-bg: #3a2a27;
+                --danger-border: #6e4a44;
+                --ok: #a8d2b4;
+                --ok-soft: #24352c;
+                --ok-line: #3e5c48;
+                --warn: #e6c98a;
+                --warn-soft: #3a3224;
+                --warn-line: #6a5a38;
+                --focus: #c5d9c2;
+                --overlay: rgba(12, 10, 8, 0.66);
+                --glow-accent: rgba(169, 197, 168, 0.16);
+                --glow-stone: rgba(212, 198, 182, 0.08);
+                --bar-track: #3a342e;
+                --hover: #322e29;
+                --inset: rgba(255, 253, 249, 0.06);
+                --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.28);
+                --shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
+                --shadow-lg: 0 22px 48px rgba(0, 0, 0, 0.42);
+            }
+
+            img.brand-icon,
+            img.app-icon {
+                filter: brightness(0) invert(0.94) sepia(0.16) saturate(0.35) hue-rotate(10deg);
+            }
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        [hidden] { display: none !important; }
+        html {
+            -webkit-text-size-adjust: 100%;
+            min-height: 100%;
+            background: var(--bg);
+            scrollbar-width: thin;
+            scrollbar-color: var(--line-strong) transparent;
+        }
+        img, svg, video { max-width: 100%; height: auto; }
+        button, input, select, textarea, summary { font-family: inherit; }
+        button, a, input, select, summary, label { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+        select,
+        textarea {
+            font-size: 16px;
+            line-height: 1.3;
+            min-height: 44px;
+        }
+        button,
+        summary,
+        .tab,
+        .pwa-gate-btn,
+        .pwa-gate-dismiss {
+            min-height: 44px;
+        }
+        :focus { outline: none; }
+        :focus-visible {
+            outline: 2px solid var(--focus);
+            outline-offset: 2px;
+        }
+        ::selection { background: var(--accent-soft); color: var(--text); }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+        body {
+            margin: 0;
+            min-height: 100dvh;
+            max-width: 100%;
+            overflow-x: hidden;
+            background:
+                radial-gradient(circle at 12% 0%, var(--glow-accent), transparent 28%),
+                linear-gradient(180deg, var(--bg-top), var(--bg));
+            color: var(--text);
+            font-family: var(--font-sans);
+            font-size: 15px;
+            line-height: 1.45;
+            padding:
+                max(var(--space-3), env(safe-area-inset-top))
+                max(var(--space-3), env(safe-area-inset-right))
+                max(var(--space-4), env(safe-area-inset-bottom))
+                max(var(--space-3), env(safe-area-inset-left));
+            -webkit-font-smoothing: antialiased;
+        }
+        .wrap { width: min(760px, 100%); margin: 0 auto; min-width: 0; }
+        .head { margin: 0 0 var(--space-3); }
+        .head h1 { font-size: clamp(1.2rem, 4vw, 1.5rem); margin: 0 0 6px; letter-spacing: -0.02em; }
+        .head p, .hint { margin: 0; color: var(--muted); font-size: 0.875rem; line-height: 1.5; }
+        .card { border: 1px solid var(--line); background: var(--panel); border-radius: var(--radius-lg); padding: var(--space-3); margin-bottom: var(--space-3); box-shadow: var(--shadow); min-width: 0; }
+        .checks { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
+        .check { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; background: var(--surface); font-size: 0.875rem; overflow-wrap: anywhere; }
+        .check b { display: block; font-size: 0.875rem; margin-bottom: 2px; }
+        .pass b { color: var(--ok); }
+        .fail b { color: var(--danger); }
+        .form-grid { display: grid; gap: var(--space-3); }
+        .two { display: grid; grid-template-columns: minmax(0, 1fr) 6.5rem; gap: var(--space-2); }
+        .field { display: grid; gap: 6px; color: var(--muted); font-size: 0.8125rem; font-weight: 700; }
+        .input { width: 100%; min-width: 0; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--panel-strong); color: var(--text); padding: 10px 12px; }
+        .input:focus-visible { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+        .btn { width: 100%; border: 0; border-radius: var(--radius); background: var(--accent); color: var(--on-accent); font-weight: 700; font-size: 1rem; padding: 10px 12px; cursor: pointer; }
+        .btn:hover { background: var(--accent-hover); }
+        .btn:disabled { opacity: 0.45; cursor: default; }
+        .error, .locked { border: 1px solid var(--danger-border); background: var(--danger-bg); border-radius: var(--radius); padding: 10px 12px; color: var(--danger); font-size: 0.875rem; line-height: 1.5; }
+        .locked a { color: var(--accent); }
+        .section-title { margin: 0 0 var(--space-2); font-size: 1rem; }
+        @media (min-width: 640px) {
+            .checks { grid-template-columns: 1fr 1fr; }
+            .form-grid.cols { grid-template-columns: 1fr 1fr; }
+        }
+        @media (min-width: 768px) {
+            body { padding: var(--space-5); }
+            .card { padding: var(--space-4); }
+            .checks { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
     </style>
 </head>
 <body>
