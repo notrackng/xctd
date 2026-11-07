@@ -913,24 +913,43 @@ $lastId = isset($transactions[0]['id']) ? (int) $transactions[0]['id'] : 0;
         .file {
             width: 100%;
             min-width: 0;
-            padding: 8px 10px;
-            border: 1px dashed var(--line-strong);
-            border-radius: var(--radius);
+            padding: 0;
+            overflow: hidden;
+            border: var(--control-border) solid var(--line-strong);
+            border-radius: var(--control-radius);
             background: var(--panel-strong);
             color: var(--muted);
         }
         .file:hover { background: var(--hover); }
         .file:focus-visible { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
         .file::file-selector-button {
-            min-height: 32px;
-            margin-right: 10px;
-            padding: 6px 10px;
+            height: var(--control-height);
+            margin: 0;
+            margin-left: 0;
+            margin-inline-start: 0;
+            margin-inline-end: var(--control-pad-x);
+            padding: 0 var(--control-pad-x);
             border: 0;
-            border-radius: var(--radius-sm);
+            border-radius: var(--control-radius) 0 0 var(--control-radius);
             background: var(--accent);
             color: var(--on-accent);
             font: inherit;
-            font-size: 0.875rem;
+            font-size: var(--control-font-size);
+            font-weight: 700;
+        }
+        .file::-webkit-file-upload-button {
+            height: var(--control-height);
+            margin: 0;
+            margin-left: 0;
+            margin-inline-start: 0;
+            margin-inline-end: var(--control-pad-x);
+            padding: 0 var(--control-pad-x);
+            border: 0;
+            border-radius: var(--control-radius) 0 0 var(--control-radius);
+            background: var(--accent);
+            color: var(--on-accent);
+            font: inherit;
+            font-size: var(--control-font-size);
             font-weight: 700;
         }
         .primary {
@@ -1175,23 +1194,46 @@ $lastId = isset($transactions[0]['id']) ? (int) $transactions[0]['id'] : 0;
             cursor: not-allowed;
             box-shadow: none;
         }
-        input[type="file"],
-        input.file {
+        input[type="file"]:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+        input.file:not([type="hidden"]) {
             display: block;
             width: 100%;
-            padding: 0 var(--control-pad-x) 0 0;
+            padding: 0;
+            padding-inline: 0;
+            overflow: hidden;
             color: var(--muted);
             font-weight: 500;
             line-height: var(--control-line);
         }
         input[type="file"]::file-selector-button,
         input.file::file-selector-button {
-            height: var(--control-line);
-            margin: 0 var(--control-gap) 0 0;
+            height: var(--control-height);
+            margin: 0;
+            margin-left: 0;
+            margin-inline-start: 0;
+            margin-inline-end: var(--control-pad-x);
             padding: 0 var(--control-pad-x);
             border: 0;
-            border-right: var(--control-border) solid var(--accent-hover);
-            border-radius: calc(var(--control-radius) - var(--control-border)) 0 0 calc(var(--control-radius) - var(--control-border));
+            border-radius: var(--control-radius) 0 0 var(--control-radius);
+            background: var(--accent);
+            color: var(--on-accent);
+            font: inherit;
+            font-size: var(--control-font-size);
+            font-weight: 700;
+            line-height: var(--control-line);
+            vertical-align: middle;
+            cursor: pointer;
+        }
+        input[type="file"]::-webkit-file-upload-button,
+        input.file::-webkit-file-upload-button {
+            height: var(--control-height);
+            margin: 0;
+            margin-left: 0;
+            margin-inline-start: 0;
+            margin-inline-end: var(--control-pad-x);
+            padding: 0 var(--control-pad-x);
+            border: 0;
+            border-radius: var(--control-radius) 0 0 var(--control-radius);
             background: var(--accent);
             color: var(--on-accent);
             font: inherit;
