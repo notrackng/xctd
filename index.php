@@ -1000,60 +1000,12 @@ $lastId = isset($transactions[0]['id']) ? (int) $transactions[0]['id'] : 0;
         .pager-btn { min-width: 44px; padding: 8px 12px; border: 1px solid var(--line-strong); background: var(--panel-strong); color: var(--text); font-size: 0.875rem; font-weight: 700; cursor: pointer; }
         .pager-btn:disabled { opacity: 0.45; cursor: default; }
         .page-hidden { display: none !important; }
-        @media (max-width: 719px) {
-            .weekly-table, .table-wrap { overflow: visible; border: 0; background: transparent; }
-            .weekly-table table, .table-wrap table { display: block; }
-            .weekly-table thead, .table-wrap thead { display: none; }
-            .weekly-table tr, .table-wrap tr {
-                display: block;
-                margin: 0 0 var(--space-2);
-                padding: 8px 10px;
-                border: 1px solid var(--line);
-                border-radius: var(--radius);
-                background: var(--panel-strong);
-            }
-            .weekly-table td, .table-wrap td {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 12px;
-                width: auto;
-                padding: 6px 0;
-                border: 0;
-                text-align: right;
-            }
-            .weekly-table td::before, .table-wrap td::before {
-                flex: 0 0 auto;
-                color: var(--muted);
-                font-size: 0.75rem;
-                font-weight: 700;
-                text-align: left;
-                text-transform: uppercase;
-                letter-spacing: 0.03em;
-            }
-            .weekly-table td:nth-child(1)::before { content: "SUBID"; }
-            .weekly-table td:nth-child(2)::before { content: "Location"; }
-            .weekly-table td:nth-child(3)::before { content: "Team"; }
-            .weekly-table td:nth-child(4)::before { content: "This week"; }
-            .weekly-table td:nth-child(5)::before { content: "Carry"; }
-            .table-wrap td:nth-child(1)::before { content: "SUBID"; }
-            .table-wrap td:nth-child(2)::before { content: "Team"; }
-            .table-wrap td:nth-child(3)::before { content: "Final"; }
-            .table-wrap td:nth-child(4)::before { content: "Receipt date"; }
-            .table-wrap td:nth-child(5)::before { content: "Delete"; }
-            .weekly-table td.empty, .table-wrap td.empty { display: block; text-align: center; }
-            .weekly-table td.empty::before, .table-wrap td.empty::before { content: none; }
-            .table-wrap .receipt-date { display: flex; }
-        }
+        .receipt-date { display: table-cell; }
         @media (min-width: 720px) {
             .upload-grid { grid-template-columns: minmax(0, 1fr) auto; }
             .primary { width: auto; }
-            .receipt-date { display: table-cell; }
             .toast-stack { left: auto; right: var(--space-4); width: 300px; transform: none; }
             .toast { text-align: left; }
-        }
-        @media (max-width: 719px) {
-            .receipt-date { display: flex; }
         }
     
         /* Shared control box: one height, padding, radius, border, type size, and line box. */
@@ -1356,7 +1308,7 @@ $lastId = isset($transactions[0]['id']) ? (int) $transactions[0]['id'] : 0;
             .grid button.btn { width: auto; }
         }
 
-        /* Weekly payment status fills the card at every width. */
+        /* Weekly status stays full width; each record is one horizontal line. */
         #weekly-obligations {
             width: 100%;
             max-width: none;
@@ -1366,43 +1318,78 @@ $lastId = isset($transactions[0]['id']) ? (int) $transactions[0]['id'] : 0;
         #weekly-obligations .section-title,
         #weekly-obligations .weekly-metrics,
         #weekly-obligations .weekly-table,
-        #weekly-obligations .weekly-table table,
-        #weekly-obligations .pager {
+        #weekly-obligations .pager,
+        .card:has(#transactions-weeks) > .section-title,
+        #transactions-weeks,
+        #transactions-weeks .week-group,
+        #transactions-weeks .table-wrap {
             width: 100%;
             max-width: none;
+            min-width: 0;
         }
-        #weekly-obligations .weekly-table table {
-            table-layout: fixed;
+        #weekly-obligations .section-title,
+        .card:has(#transactions-weeks) > .section-title,
+        #transactions-weeks .week-summary {
+            flex-wrap: nowrap;
+            min-width: 0;
         }
-        #weekly-obligations .weekly-table th:nth-child(1),
-        #weekly-obligations .weekly-table td:nth-child(1),
-        #weekly-obligations .weekly-table th:nth-child(2),
-        #weekly-obligations .weekly-table td:nth-child(2),
-        #weekly-obligations .weekly-table th:nth-child(4),
-        #weekly-obligations .weekly-table td:nth-child(4) { width: 22%; }
-        #weekly-obligations .weekly-table th:nth-child(3),
-        #weekly-obligations .weekly-table td:nth-child(3) { width: 16%; }
-        #weekly-obligations .weekly-table th:nth-child(5),
-        #weekly-obligations .weekly-table td:nth-child(5) { width: 18%; }
-        @media (max-width: 719px) {
-            #weekly-obligations .weekly-table,
-            #weekly-obligations .weekly-table table,
-            #weekly-obligations .weekly-table thead,
-            #weekly-obligations .weekly-table tbody,
-            #weekly-obligations .weekly-table tr,
-            #weekly-obligations .weekly-table td:nth-child(n) {
-                display: block;
-                width: 100%;
-                max-width: none;
-                box-sizing: border-box;
-            }
-            #weekly-obligations .weekly-table td:nth-child(n) {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-            #weekly-obligations .weekly-table thead { display: none; }
+        #weekly-obligations .section-title h2,
+        .card:has(#transactions-weeks) > .section-title h2,
+        #transactions-weeks .week-summary > span:first-child {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
+        #weekly-obligations .section-title .count,
+        .card:has(#transactions-weeks) > .section-title .meta,
+        #transactions-weeks .week-summary .count {
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+        #weekly-obligations .weekly-metrics {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        #weekly-obligations .weekly-metric span,
+        #weekly-obligations .weekly-metric b {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        #weekly-obligations .weekly-table,
+        #transactions-weeks .table-wrap {
+            display: block;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        #weekly-obligations .weekly-table table,
+        #transactions-weeks .table-wrap table {
+            display: table;
+            width: 100%;
+            min-width: max(100%, 34rem);
+            border-collapse: collapse;
+            table-layout: auto;
+        }
+        #weekly-obligations .weekly-table thead,
+        #transactions-weeks .table-wrap thead { display: table-header-group; }
+        #weekly-obligations .weekly-table tbody,
+        #transactions-weeks .table-wrap tbody { display: table-row-group; }
+        #weekly-obligations .weekly-table tr,
+        #transactions-weeks .table-wrap tr { display: table-row; }
+        #weekly-obligations .weekly-table th,
+        #weekly-obligations .weekly-table td,
+        #transactions-weeks .table-wrap th,
+        #transactions-weeks .table-wrap td {
+            display: table-cell;
+            width: auto;
+            max-width: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            vertical-align: middle;
+        }
+        #transactions-weeks .table-wrap .receipt-date { display: table-cell; }
     </style>
 </head>
 <body
