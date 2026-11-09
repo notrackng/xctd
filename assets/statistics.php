@@ -102,8 +102,9 @@ if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] === 
             var x=numberValue(r.XCTD_raw),m=numberValue(r.MNX_raw),t=numberValue(r.total_raw);
             var c=parseInt(String(r.count||0),10)||0;
             sumX+=x;sumM+=m;sumT+=t;sumC+=c;
+            var weekLabel = String(r.label||'');
             $('<tr>').append(
-                $('<td>').text(String(r.label||'')),
+                $('<td>', {title: weekLabel}).text(weekLabel),
                 $('<td>',{'class':'wh-num'}).text(formatIdr(r.XCTD_raw)),
                 $('<td>',{'class':'wh-num'}).text(formatIdr(r.MNX_raw)),
                 $('<td>',{'class':'wh-num wh-total'}).text(formatIdr(r.total_raw)),

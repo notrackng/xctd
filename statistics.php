@@ -479,23 +479,34 @@ try {
         .legend-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--accent); }
         .legend-dot.mnx { background: var(--accent2); }
         .report-list {
+            width: 100%;
             max-width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+            min-width: 0;
+            overflow: hidden;
             border: 1px solid var(--line);
             border-radius: var(--radius);
             background: var(--panel-strong);
         }
-        .weekly-history table { width: 100%; border-collapse: collapse; }
-        .weekly-history th, .weekly-history td { padding: 8px 10px; border-bottom: 1px solid var(--line); font-size: 0.875rem; line-height: 1.35; color: var(--text); text-align: left; }
-        .weekly-history th { background: var(--surface); color: var(--muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
+        .weekly-history table { width: 100%; max-width: 100%; min-width: 0; border-collapse: collapse; table-layout: fixed; }
+        .weekly-history th, .weekly-history td { padding: clamp(3px, 0.8vw, 8px) clamp(3px, 0.7vw, 8px); border-bottom: 1px solid var(--line); font-size: clamp(0.56rem, 2.15vw, 0.8125rem); line-height: 1.2; color: var(--text); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .weekly-history th { background: var(--surface); color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
         .weekly-history tbody tr:last-child td { border-bottom: 0; }
         .weekly-history .wh-num { text-align: right; font-variant-numeric: tabular-nums; }
         .weekly-history .wh-total { font-weight: 700; }
         .weekly-history .wh-count { color: var(--muted); }
         .weekly-history .wh-foot td { border-top: 1px solid var(--line-strong); background: var(--surface); font-weight: 700; }
         .empty { padding: 16px; color: var(--muted); text-align: center; font-size: 0.875rem; }
-        .reporting-details { padding: 0; overflow: hidden; }
+        .reporting-details { width: 100%; max-width: none; min-width: 0; padding: 0; overflow: hidden; grid-column: 1 / -1; }
+        .reporting-details .details-body,
+        .weekly-history { width: 100%; max-width: 100%; min-width: 0; }
+        .weekly-history th:nth-child(2),
+        .weekly-history td:nth-child(2),
+        .weekly-history th:nth-child(3),
+        .weekly-history td:nth-child(3),
+        .weekly-history th:nth-child(4),
+        .weekly-history td:nth-child(4) { width: 16ch; overflow: visible; text-overflow: clip; font-variant-numeric: tabular-nums; }
+        .weekly-history th:nth-child(5),
+        .weekly-history td:nth-child(5) { width: 4.5ch; overflow: visible; text-overflow: clip; font-variant-numeric: tabular-nums; }
         .reporting-details > summary {
             display: flex;
             align-items: center;
@@ -516,23 +527,6 @@ try {
         .reporting-details .details-body { padding: var(--space-3); }
         @media (max-width: 719px) {
             .reporting-details > summary > .muted { display: none; }
-            .weekly-history table { display: block; }
-            .weekly-history thead { display: none; }
-            .weekly-history tr {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 6px 12px;
-                padding: 10px 12px;
-                border-bottom: 1px solid var(--line);
-            }
-            .weekly-history td { display: block; border: 0; padding: 0; text-align: left; }
-            .weekly-history td:first-child { grid-column: 1 / -1; font-weight: 700; }
-            .weekly-history td.wh-num::before { display: block; color: var(--muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
-            .weekly-history td:nth-child(2)::before { content: "XCTD"; }
-            .weekly-history td:nth-child(3)::before { content: "MNX"; }
-            .weekly-history td:nth-child(4)::before { content: "Total"; }
-            .weekly-history td:nth-child(5)::before { content: "Receipts"; }
-            .weekly-history .wh-num { text-align: left; }
         }
         @media (min-width: 768px) {
             .grid3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }

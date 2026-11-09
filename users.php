@@ -898,6 +898,22 @@ $csrfToken = Security::csrfToken();
         @media (min-width: 768px) {
             .grid button.btn { width: auto; }
         }
+
+        main.wrap > .card { width: 100%; max-width: none; min-width: 0; }
+        .grid { width: 100%; gap: var(--control-gap); align-items: center; }
+        .grid input,
+        .grid select,
+        .grid .btn { width: 100%; min-width: 0; max-width: 100%; }
+        .table { width: 100%; max-width: 100%; min-width: 0; overflow: hidden; }
+        .table table { width: 100%; min-width: 0; }
+        .inline { width: 100%; min-width: 0; align-items: center; gap: var(--control-gap); }
+        .inline input,
+        .inline select,
+        .inline .btn { min-width: 0; max-width: 100%; }
+        @media (min-width: 768px) {
+            .grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 0.9fr) auto; }
+            .grid button.btn { width: auto; }
+        }
     </style>
 </head>
 <body data-pwa-gate>

@@ -925,6 +925,40 @@ $csrfToken = Security::csrfToken();
         @media (min-width: 768px) {
             .grid button.btn { width: auto; }
         }
+
+        main.wrap > .card { width: 100%; max-width: none; min-width: 0; }
+        .add-line,
+        .row-form,
+        .accounts-row,
+        .account-add-form,
+        .table-wrap,
+        .table-wrap table {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+        }
+        .add-line,
+        .row-form { grid-template-columns: minmax(0, 1fr); gap: var(--control-gap); align-items: center; }
+        .table-wrap { overflow: hidden; }
+        .add-line .input,
+        .add-line .select,
+        .row-form .input,
+        .row-form .select,
+        .account-add-form .input,
+        .account-add-form .select { width: 100%; min-width: 0; max-width: 100%; }
+        @media (min-width: 900px) {
+            .add-line { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 0.7fr) auto; }
+            .add-line button.btn { width: auto; }
+            .row-form { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 0.65fr) minmax(0, 0.75fr) auto auto; }
+            .row-form button.btn,
+            .account-add-form button.btn { width: auto; }
+            .account-add-form { flex-direction: row; align-items: center; }
+        }
+        @media (max-width: 899px) {
+            .add-line button.btn,
+            .row-form button.btn,
+            .account-add-form button.btn { width: 100%; }
+        }
     </style>
 </head>
 <body data-senders-endpoint="api/senders.php" data-pwa-gate>

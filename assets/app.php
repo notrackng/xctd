@@ -186,10 +186,13 @@ if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] === 
         var id = parseInt(String(row.id || '0'), 10);
         if (!Number.isFinite(id) || id <= 0) { return null; }
         var $tr = $('<tr>').attr('data-id', String(id));
-        $('<td>').text(String(row.subid || row.alias || '—')).appendTo($tr);
-        $('<td>').text(String(row.team || '')).appendTo($tr);
+        var subidText = String(row.subid || row.alias || '—');
+        var teamText = String(row.team || '');
+        var receiptText = String(row.receipt_date || '');
+        $('<td>', {title: subidText}).text(subidText).appendTo($tr);
+        $('<td>', {title: teamText}).text(teamText).appendTo($tr);
         $('<td>', {'class': 'right final'}).text(String(row.adjusted_amount || 'IDR 0')).appendTo($tr);
-        $('<td>', {'class': 'receipt-date'}).text(String(row.receipt_date || '')).appendTo($tr);
+        $('<td>', {'class': 'receipt-date', title: receiptText}).text(receiptText).appendTo($tr);
         if (canDeleteTransactions()) {
             $('<td>', {'class': 'right'}).append(
                 $('<button>', {type: 'button', 'class': 'tx-delete', 'data-id': String(id), text: 'Delete'})
@@ -353,10 +356,13 @@ if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] === 
             var carry = parseInt(String(row.outstanding_weeks || 0), 10) || 0;
             var label = status.charAt(0).toUpperCase() + status.slice(1);
             var $tr = $('<tr>').attr('data-weekly-sender-id', String(senderId));
-            $('<td>').text(String(row.subid || row.alias || '')).appendTo($tr);
-            $('<td>').text(String(row.location || '')).appendTo($tr);
-            $('<td>').text(String(row.team || '')).appendTo($tr);
-            $('<td>').append($('<span>', {'class': 'status-pill ' + status}).text(label)).appendTo($tr);
+            var subidText = String(row.subid || row.alias || '');
+            var locationText = String(row.location || '');
+            var teamText = String(row.team || '');
+            $('<td>', {title: subidText}).text(subidText).appendTo($tr);
+            $('<td>', {title: locationText}).text(locationText).appendTo($tr);
+            $('<td>', {title: teamText}).text(teamText).appendTo($tr);
+            $('<td>', {title: label}).append($('<span>', {'class': 'status-pill ' + status}).text(label)).appendTo($tr);
             $('<td>', {'class': 'right ' + (carry > 0 ? 'carry' : 'carry zero')}).text(carry > 0 ? String(carry) + ' wk' : '—').appendTo($tr);
             $tr.appendTo($body);
         });

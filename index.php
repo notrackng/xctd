@@ -850,9 +850,10 @@ $lastId = isset($transactions[0]['id']) ? (int) $transactions[0]['id'] : 0;
         .weekly-metric span { color: var(--muted); font-size: 0.75rem; line-height: 1.25; }
         .weekly-metric b { margin-top: 4px; font-size: 1rem; font-weight: 700; line-height: 1.15; }
         .weekly-table, .table-wrap {
+            width: 100%;
             max-width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+            min-width: 0;
+            overflow: hidden;
             border: 1px solid var(--line);
             border-radius: var(--radius);
             background: var(--panel-strong);
@@ -1401,17 +1402,19 @@ $lastId = isset($transactions[0]['id']) ? (int) $transactions[0]['id'] : 0;
         #weekly-obligations .weekly-table,
         #transactions-weeks .table-wrap {
             display: block;
-            overflow-x: auto;
-            overflow-y: hidden;
-            -webkit-overflow-scrolling: touch;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            overflow: hidden;
         }
         #weekly-obligations .weekly-table table,
         #transactions-weeks .table-wrap table {
             display: table;
             width: 100%;
-            min-width: max(100%, 34rem);
+            max-width: 100%;
+            min-width: 0;
             border-collapse: collapse;
-            table-layout: auto;
+            table-layout: fixed;
         }
         #weekly-obligations .weekly-table thead,
         #transactions-weeks .table-wrap thead { display: table-header-group; }
@@ -1424,14 +1427,47 @@ $lastId = isset($transactions[0]['id']) ? (int) $transactions[0]['id'] : 0;
         #transactions-weeks .table-wrap th,
         #transactions-weeks .table-wrap td {
             display: table-cell;
-            width: auto;
-            max-width: none;
+            padding: clamp(3px, 0.8vw, 8px) clamp(3px, 0.7vw, 8px);
+            font-size: clamp(0.56rem, 2.15vw, 0.8125rem);
+            line-height: 1.2;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             vertical-align: middle;
         }
+        #weekly-obligations .weekly-table th:nth-child(3),
+        #weekly-obligations .weekly-table td:nth-child(3) { width: 7ch; }
+        #weekly-obligations .weekly-table th:nth-child(4),
+        #weekly-obligations .weekly-table td:nth-child(4) { width: 15ch; }
+        #weekly-obligations .weekly-table th:nth-child(5),
+        #weekly-obligations .weekly-table td:nth-child(5) {
+            width: 8ch;
+            overflow: visible;
+            text-overflow: clip;
+            font-variant-numeric: tabular-nums;
+        }
+        #transactions-weeks .table-wrap th:nth-child(2),
+        #transactions-weeks .table-wrap td:nth-child(2) { width: 7ch; }
+        #transactions-weeks .table-wrap th:nth-child(3),
+        #transactions-weeks .table-wrap td:nth-child(3) {
+            width: 16ch;
+            overflow: visible;
+            text-overflow: clip;
+            font-variant-numeric: tabular-nums;
+        }
+        #transactions-weeks .table-wrap th:nth-child(4),
+        #transactions-weeks .table-wrap td:nth-child(4) { width: 12ch; }
+        #transactions-weeks .table-wrap th:nth-child(5),
+        #transactions-weeks .table-wrap td:nth-child(5) { width: 11ch; }
         #transactions-weeks .table-wrap .receipt-date { display: table-cell; }
+        #transactions-weeks button.tx-delete {
+            width: 100%;
+            max-width: 100%;
+            height: var(--control-height);
+            min-height: 0;
+            padding-inline: 2px;
+            font-size: clamp(0.56rem, 2vw, 0.75rem);
+        }
     </style>
 </head>
 <body
@@ -1482,7 +1518,7 @@ $lastId = isset($transactions[0]['id']) ? (int) $transactions[0]['id'] : 0;
         <?php $weeklyRows = is_array($weekly['rows'] ?? null) ? $weekly['rows'] : []; ?>
         <?php if ($weeklyRows === []): ?><tr id="weekly-empty-row"><td colspan="5" class="empty">No registered sender obligations.</td></tr><?php else: ?>
             <?php foreach ($weeklyRows as $row): $status = (string) ($row['current_status'] ?? 'pending'); $carry = (int) ($row['outstanding_weeks'] ?? 0); ?>
-                <tr data-weekly-sender-id="<?= (int) ($row['sender_id'] ?? 0) ?>"><td><?= Security::e((string) ($row['alias'] ?? '')) ?></td><td><?= Security::e((string) ($row['location'] ?? '')) ?></td><td><?= Security::e((string) ($row['team'] ?? '')) ?></td><td><span class="status-pill <?= Security::e($status) ?>"><?= Security::e(ucfirst($status)) ?></span></td><td class="right <?= $carry > 0 ? 'carry' : 'carry zero' ?>"><?= $carry > 0 ? Security::e((string) $carry . ' wk') : '—' ?></td></tr>
+                <tr data-weekly-sender-id="<?= (int) ($row['sender_id'] ?? 0) ?>"><td title="<?= Security::e((string) ($row['alias'] ?? '')) ?>"><?= Security::e((string) ($row['alias'] ?? '')) ?></td><td title="<?= Security::e((string) ($row['location'] ?? '')) ?>"><?= Security::e((string) ($row['location'] ?? '')) ?></td><td title="<?= Security::e((string) ($row['team'] ?? '')) ?>"><?= Security::e((string) ($row['team'] ?? '')) ?></td><td title="<?= Security::e(ucfirst($status)) ?>"><span class="status-pill <?= Security::e($status) ?>"><?= Security::e(ucfirst($status)) ?></span></td><td class="right <?= $carry > 0 ? 'carry' : 'carry zero' ?>"><?= $carry > 0 ? Security::e((string) $carry . ' wk') : '—' ?></td></tr>
             <?php endforeach; ?>
         <?php endif; ?>
         </tbody></table></div>
@@ -1522,10 +1558,10 @@ $lastId = isset($transactions[0]['id']) ? (int) $transactions[0]['id'] : 0;
                 <div class="table-wrap"><table aria-label="Final transaction output"><thead><tr><th>SUBID</th><th>Team</th><th class="right">Final</th><th class="receipt-date">Receipt date</th><?php if ($isAdmin): ?><th class="right">Delete</th><?php endif; ?></tr></thead><tbody>
                 <?php foreach ($weekGroup['rows'] as $transaction): ?>
                     <tr data-id="<?= (int) ($transaction['id'] ?? 0) ?>">
-                        <td><?= Security::e((string) (($transaction['sender_alias'] ?? null) ?: '—')) ?></td>
-                        <td><?= Security::e((string) ($transaction['team'] ?? '')) ?></td>
+                        <td title="<?= Security::e((string) (($transaction['sender_alias'] ?? null) ?: '—')) ?>"><?= Security::e((string) (($transaction['sender_alias'] ?? null) ?: '—')) ?></td>
+                        <td title="<?= Security::e((string) ($transaction['team'] ?? '')) ?>"><?= Security::e((string) ($transaction['team'] ?? '')) ?></td>
                         <td class="right final"><?= Security::e(MoneyFormatter::formatIdr((string) ($transaction['adjusted_amount'] ?? '0'))) ?></td>
-                        <td class="receipt-date"><?= Security::e((string) (($transaction['receipt_date'] ?? null) ?: ($transaction['created_at'] ?? ''))) ?></td>
+                        <td class="receipt-date" title="<?= Security::e((string) (($transaction['receipt_date'] ?? null) ?: ($transaction['created_at'] ?? ''))) ?>"><?= Security::e((string) (($transaction['receipt_date'] ?? null) ?: ($transaction['created_at'] ?? ''))) ?></td>
                         <?php if ($isAdmin): ?><td class="right"><button type="button" class="tx-delete" data-id="<?= (int) ($transaction['id'] ?? 0) ?>">Delete</button></td><?php endif; ?>
                     </tr>
                 <?php endforeach; ?>
